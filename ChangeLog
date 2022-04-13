@@ -1,7 +1,8 @@
-L1VMgodata - (0.0.1)
+L1VMgodata - (0.4)
     Initial commit with some TCP/IP server socket code.
     This is my first go project. It will be a data base if it finished.
 
     Added data handling functions.
+    Added mutexes, removed not needed constants.
 
--- Stefan Pietzonke <jay-t@gmx.net> Wed 13 Apr 2022 19:02 +0200
+-- Stefan Pietzonke <jay-t@gmx.net> Wed 13 Apr 2022 20:15 +0200

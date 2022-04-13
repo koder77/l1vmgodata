@@ -29,6 +29,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"sync"
 )
 
 // misc defs
@@ -57,6 +58,14 @@ const (
 	SERVER_TYPE = "tcp"
 )
 
+// data base commands
+const (
+	STORE_DATA     = "store data"
+	GET_DATA_KEY   = "get key"
+	GET_DATA_VALUE = "get value"
+	REMOVE_DATA    = "remove"
+)
+
 type data struct {
 	used  bool
 	key   string
@@ -65,6 +74,8 @@ type data struct {
 
 var maxdata int64 = 10000 // max data number
 var pdata *[]data
+
+var dmutex sync.Mutex // data mutex
 
 func init_data() {
 	var i int64
@@ -77,11 +88,13 @@ func init_data() {
 
 func get_free_space() int64 {
 	var i int64
+	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
 			return i
 		}
 	}
+	dmutex.Unlock()
 	// no free space found, return -1
 	return -1
 }
@@ -96,10 +109,11 @@ func store_data(key string, value string) int {
 	}
 
 	// store data at index i
+	dmutex.Lock()
 	(*pdata)[i].used = true
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
-
+	dmutex.Unlock()
 	return 0
 }
 
@@ -109,6 +123,7 @@ func get_data_key(key string) string {
 
 	regexp := regexp.MustCompile(key)
 
+	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
 			match = regexp.Match([]byte((*pdata)[i].key))
@@ -117,6 +132,7 @@ func get_data_key(key string) string {
 			}
 		}
 	}
+	dmutex.Unlock()
 	// no matching key found, return empty string
 	return ""
 }
@@ -127,6 +143,7 @@ func get_data_value(value string) string {
 
 	regexp := regexp.MustCompile(value)
 
+	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
 			match = regexp.Match([]byte((*pdata)[i].value))
@@ -135,6 +152,7 @@ func get_data_value(value string) string {
 			}
 		}
 	}
+	dmutex.Unlock()
 	// no matching value found, return empty string
 	return ""
 }
@@ -146,6 +164,7 @@ func remove_data(key string) string {
 
 	regexp := regexp.MustCompile(key)
 
+	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
 			match = regexp.Match([]byte((*pdata)[i].key))
@@ -158,6 +177,7 @@ func remove_data(key string) string {
 			}
 		}
 	}
+	dmutex.Unlock()
 	// no matching key found, return empty string
 	return ""
 }
