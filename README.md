@@ -13,5 +13,8 @@ TODO: client handling sockets code.
 Via nc you can send the "store data" command:
 
 ```
-store data :test 12345
+store data :test "12345"
+OK
+get key :test
+12345
 ```
