@@ -30,6 +30,7 @@ import (
 	"os"
 )
 
+// misc defs
 const (
 	MACHINE_BIG_ENDIAN = "0"
 
@@ -48,16 +49,25 @@ const (
 	ERR_FILE_FPOS   = "-7"
 )
 
+// socket
 const (
 	SERVER_HOST = "localhost"
 	SERVER_PORT = "2000"
 	SERVER_TYPE = "tcp"
 )
 
+// data types
+const (
+	EMPTY       = "0"
+	INT_TYPE    = "1"
+	DOUBLE_TYPE = "2"
+	STRING_TYPE = "3"
+)
+
 type mem struct {
-	string
-	int64
-	float64
+	s string
+	i int64
+	d float64
 }
 
 type data struct {
@@ -65,6 +75,18 @@ type data struct {
 	name  string
 	size  int64
 	mem   mem
+}
+
+var maxdata = 10000 // max data number
+var *pdata;
+
+func init_data() {
+	for i := 0; i < maxdata; i++ {
+		pdata[i].dtype = 0
+		pdata[i].mem.i = 0
+		pdata[i].mem.d = 0.0
+		pdata[i].mem.s = ""
+	}
 }
 
 func run_server() {
@@ -101,5 +123,8 @@ func processClient(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata start...")
+	servdata := data{}
+	pdata = &servdata
+	init_data()
 	run_server()
 }
