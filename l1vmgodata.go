@@ -253,8 +253,8 @@ func processClient(connection net.Conn) {
 		fmt.Println("Received: '", string(buffer[:mLen]), "'")
 		fmt.Println("length: ", mLen)
 
-		regexp := regexp.MustCompile(STORE_DATA)
-		match = regexp.Match([]byte(buffer[:mLen]))
+		regexp_store := regexp.MustCompile(STORE_DATA)
+		match = regexp_store.Match([]byte(buffer[:mLen]))
 		if match {
 			fmt.Println("store data parsing...")
 			// store key/value pair
@@ -271,7 +271,9 @@ func processClient(connection net.Conn) {
 			}
 		}
 
-		if string(buffer[:mLen]) == CLOSE_CONNECTION {
+		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
+		match = regexp_close.Match([]byte(buffer[:mLen]))
+		if match {
 			run_loop = false
 		}
 	}
