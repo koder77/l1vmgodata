@@ -77,9 +77,12 @@ type data struct {
 	mem   mem
 }
 
+/*
 var maxdata = 10000 // max data number
-var *pdata;
+var pdata *[]data
+*/
 
+/*
 func init_data() {
 	for i := 0; i < maxdata; i++ {
 		pdata[i].dtype = 0
@@ -88,6 +91,7 @@ func init_data() {
 		pdata[i].mem.s = ""
 	}
 }
+*/
 
 func run_server() {
 	fmt.Println("run_server...")
@@ -123,8 +127,8 @@ func processClient(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata start...")
-	servdata := data{}
-	pdata = &servdata
-	init_data()
+	// servdata := data{}
+	// pdata = &servdata
+	// init_data()
 	run_server()
 }
