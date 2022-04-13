@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"regexp"
 )
 
 // misc defs
@@ -56,37 +57,109 @@ const (
 	SERVER_TYPE = "tcp"
 )
 
-// data types
-const (
-	EMPTY       = "0"
-	INT_TYPE    = "1"
-	DOUBLE_TYPE = "2"
-	STRING_TYPE = "3"
-)
-
-type mem struct {
-	s string
-	i int64
-	d float64
-}
-
 type data struct {
-	dtype int
-	name  string
-	size  int64
-	mem   mem
+	used  bool
+	key   string
+	value string
 }
 
-var maxdata = 10000 // max data number
+var maxdata int64 = 10000 // max data number
 var pdata *[]data
 
 func init_data() {
-	for i := 0; i < maxdata; i++ {
-		(*pdata)[i].dtype = 0
-		(*pdata)[i].mem.i = 0
-		(*pdata)[i].mem.d = 0.0
-		(*pdata)[i].mem.s = ""
+	var i int64
+	for i = 0; i < maxdata; i++ {
+		(*pdata)[i].used = false
+		(*pdata)[i].key = ""
+		(*pdata)[i].value = ""
 	}
+}
+
+func get_free_space() int64 {
+	var i int64
+	for i = 0; i < maxdata; i++ {
+		if !(*pdata)[i].used {
+			return i
+		}
+	}
+	// no free space found, return -1
+	return -1
+}
+
+func store_data(key string, value string) int {
+	var i int64 = 0
+
+	i = get_free_space()
+	if i < 0 {
+		// error: no fre space
+		return 1
+	}
+
+	// store data at index i
+	(*pdata)[i].used = true
+	(*pdata)[i].key = key
+	(*pdata)[i].value = value
+
+	return 0
+}
+
+func get_data_key(key string) string {
+	var i int64
+	var match bool
+
+	regexp := regexp.MustCompile(key)
+
+	for i = 0; i < maxdata; i++ {
+		if !(*pdata)[i].used {
+			match = regexp.Match([]byte((*pdata)[i].key))
+			if match {
+				return (*pdata)[i].value
+			}
+		}
+	}
+	// no matching key found, return empty string
+	return ""
+}
+
+func get_data_value(value string) string {
+	var i int64
+	var match bool
+
+	regexp := regexp.MustCompile(value)
+
+	for i = 0; i < maxdata; i++ {
+		if !(*pdata)[i].used {
+			match = regexp.Match([]byte((*pdata)[i].value))
+			if match {
+				return (*pdata)[i].key
+			}
+		}
+	}
+	// no matching value found, return empty string
+	return ""
+}
+
+func remove_data(key string) string {
+	var i int64
+	var match bool
+	var value string
+
+	regexp := regexp.MustCompile(key)
+
+	for i = 0; i < maxdata; i++ {
+		if !(*pdata)[i].used {
+			match = regexp.Match([]byte((*pdata)[i].key))
+			if match {
+				value = (*pdata)[i].value
+				(*pdata)[i].used = false
+				(*pdata)[i].key = ""
+				(*pdata)[i].value = ""
+				return value
+			}
+		}
+	}
+	// no matching key found, return empty string
+	return ""
 }
 
 func run_server() {
