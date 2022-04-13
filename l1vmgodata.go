@@ -32,25 +32,6 @@ import (
 	"sync"
 )
 
-// misc defs
-const (
-	MACHINE_BIG_ENDIAN = "0"
-
-	SOCKET_OPEN   = "1"
-	SOCKET_CLOSE  = "0"
-	SOCKET_SERVER = "0"
-	SOCKET_CLIENT = "1"
-
-	ERR_FILE_OK     = "0"
-	ERR_FILE_OPEN   = "-1"
-	ERR_FILE_CLOSE  = "-2"
-	ERR_FILE_READ   = "-3"
-	ERR_FILE_WRITE  = "-4"
-	ERR_FILE_NUMBER = "-5"
-	ERR_FILE_EOF    = "-6"
-	ERR_FILE_FPOS   = "-7"
-)
-
 // socket
 const (
 	SERVER_HOST = "localhost"
@@ -60,10 +41,11 @@ const (
 
 // data base commands
 const (
-	STORE_DATA     = "store data"
-	GET_DATA_KEY   = "get key"
-	GET_DATA_VALUE = "get value"
-	REMOVE_DATA    = "remove"
+	STORE_DATA       = "store data"
+	GET_DATA_KEY     = "get key"
+	GET_DATA_VALUE   = "get value"
+	REMOVE_DATA      = "remove"
+	CLOSE_CONNECTION = "close"
 )
 
 type data struct {
@@ -91,6 +73,7 @@ func get_free_space() int64 {
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
+			dmutex.Unlock()
 			return i
 		}
 	}
@@ -101,6 +84,8 @@ func get_free_space() int64 {
 
 func store_data(key string, value string) int {
 	var i int64 = 0
+
+	fmt.Println("store_data ...")
 
 	i = get_free_space()
 	if i < 0 {
@@ -114,6 +99,8 @@ func store_data(key string, value string) int {
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
 	dmutex.Unlock()
+
+	fmt.Println("store_data: ok")
 	return 0
 }
 
@@ -203,14 +190,92 @@ func run_server() {
 	}
 }
 
-func processClient(connection net.Conn) {
-	buffer := make([]byte, 1024)
-	mLen, err := connection.Read(buffer)
-	if err != nil {
-		fmt.Println("Error reading:", err.Error())
+func split_data(input string, key *string, value *string) int {
+	var i int = 0
+	var j int = 0
+	var search bool = true
+	var copy bool = true
+	var inkey string = ""
+	var invalue string = ""
+	var inplen int = 0
+	inplen = len(input)
+	for search {
+		if input[i] == ':' {
+			// store chars until next space char
+			if i >= inplen {
+				copy = false
+				search = false
+				return 1
+			}
+			i++
+			for copy {
+				if input[i] != ' ' {
+					inkey = inkey + string(input[i])
+				} else {
+					copy = false
+					search = false
+				}
+				i++
+				if i >= inplen {
+					copy = false
+					search = false
+				}
+			}
+		}
+		i++
 	}
-	fmt.Println("Received: ", string(buffer[:mLen]))
-	_, err = connection.Write([]byte("Thanks! Got your message:" + string(buffer[:mLen])))
+
+	// read chars into data
+	for j = i; j < inplen; j++ {
+		invalue = invalue + string(input[i])
+		i++
+	}
+	key = &inkey
+	value = &invalue
+
+	fmt.Println("split_data: ok")
+	return 0
+}
+
+func processClient(connection net.Conn) {
+	var run_loop bool = true
+	buffer := make([]byte, 4096)
+	var key string = ""
+	var value string = ""
+
+	var match bool
+
+	for run_loop {
+		mLen, err := connection.Read(buffer)
+		if err != nil {
+			fmt.Println("Error reading:", err.Error())
+		}
+		fmt.Println("Received: '", string(buffer[:mLen]), "'")
+		fmt.Println("length: ", mLen)
+
+		regexp := regexp.MustCompile(STORE_DATA)
+		match = regexp.Match([]byte(buffer[:mLen]))
+		if match {
+			fmt.Println("store data parsing...")
+			// store key/value pair
+			// try to store data
+			if split_data(string(buffer[:mLen]), &key, &value) == 0 {
+				if store_data(key, value) == 0 {
+					_, err = connection.Write([]byte("OK\n"))
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+				}
+				fmt.Println("store data ok!")
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
+		}
+
+		if string(buffer[:mLen]) == CLOSE_CONNECTION {
+			run_loop = false
+		}
+	}
+
 	connection.Close()
 }
 

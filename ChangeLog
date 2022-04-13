@@ -4,5 +4,6 @@ L1VMgodata - (0.4)
 
     Added data handling functions.
     Added mutexes, removed not needed constants.
+    Added store data sockets code.
 
--- Stefan Pietzonke <jay-t@gmx.net> Wed 13 Apr 2022 20:15 +0200
+-- Stefan Pietzonke <jay-t@gmx.net> Wed 13 Apr 2022 23:04 +0200
