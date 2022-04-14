@@ -86,10 +86,6 @@ func get_free_space() int64 {
 func store_data(key string, value string) int {
 	var i int64 = 0
 
-	fmt.Println("store_data ...")
-	fmt.Println("key: ", key)
-	fmt.Println("value: ", value)
-
 	i = get_free_space()
 	if i < 0 {
 		// error: no fre space
@@ -102,8 +98,6 @@ func store_data(key string, value string) int {
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
 	dmutex.Unlock()
-
-	fmt.Println("store_data: ok")
 	return 0
 }
 
@@ -119,6 +113,7 @@ func get_data_key(key string) string {
 		if (*pdata)[i].used {
 			match = regexp.Match([]byte((*pdata)[i].key))
 			if match {
+				dmutex.Unlock()
 				return (*pdata)[i].value
 			}
 		}
@@ -132,14 +127,15 @@ func get_data_value(value string) string {
 	var i int64
 	var match bool
 
-	svalue := strings.Trim(value, "\n")
-	regexp := regexp.MustCompile(svalue)
+	// svalue := strings.Trim(value, "\n")
+	regexp := regexp.MustCompile(value)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
 			match = regexp.Match([]byte((*pdata)[i].value))
 			if match {
+				dmutex.Unlock()
 				return (*pdata)[i].key
 			}
 		}
@@ -154,7 +150,8 @@ func remove_data(key string) string {
 	var match bool
 	var value string
 
-	regexp := regexp.MustCompile(key)
+	skey := strings.Trim(key, "\n")
+	regexp := regexp.MustCompile(skey)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
@@ -307,6 +304,7 @@ func split_value(input string) string {
 		}
 		i++
 	}
+	fmt.Println("split_value: ", invalue)
 	return invalue
 }
 
@@ -323,8 +321,8 @@ func processClient(connection net.Conn) {
 		if err != nil {
 			fmt.Println("Error reading:", err.Error())
 		}
-		fmt.Println("Received: '", string(buffer[:mLen]), "'")
-		fmt.Println("length: ", mLen)
+		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
+		// fmt.Println("length: ", mLen)
 
 		// store data
 		regexp_store := regexp.MustCompile(STORE_DATA)
@@ -348,13 +346,31 @@ func processClient(connection net.Conn) {
 		regexp_key := regexp.MustCompile(GET_DATA_KEY)
 		match = regexp_key.Match([]byte(buffer[:mLen]))
 		if match {
-			// store key/value pair
-			// try to store data
+			// try to find matching key
 			key = split_key(string(buffer[:mLen]))
 			if key != "" {
 				value = get_data_key(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
+		}
+
+		// get data value
+		regexp_value := regexp.MustCompile(GET_DATA_VALUE)
+		match = regexp_value.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching value
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				key = get_data_value(value)
+				if key != "" {
+					_, err = connection.Write([]byte(key))
+					_, err = connection.Write([]byte("\n"))
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 				}
