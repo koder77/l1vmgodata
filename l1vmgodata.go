@@ -36,7 +36,6 @@ import (
 // socket
 const (
 	SERVER_HOST = "localhost"
-	SERVER_PORT = "2000"
 	SERVER_TYPE = "tcp"
 )
 
@@ -58,6 +57,7 @@ type data struct {
 }
 
 var maxdata int64 = 10000 // max data number
+var server_port string = "2000"
 var pdata *[]data
 
 var dmutex sync.Mutex // data mutex
@@ -259,13 +259,13 @@ func load_data(file_path string) int {
 
 func run_server() {
 	fmt.Println("run_server...")
-	server, err := net.Listen(SERVER_TYPE, SERVER_HOST+":"+SERVER_PORT)
+	server, err := net.Listen(SERVER_TYPE, SERVER_HOST+":"+server_port)
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
 		os.Exit(1)
 	}
 	defer server.Close()
-	fmt.Println("Listening on " + SERVER_HOST + ":" + SERVER_PORT)
+	fmt.Println("Listening on " + SERVER_HOST + ":" + server_port)
 	fmt.Println("Waiting for client...")
 	for {
 		connection, err := server.Accept()
@@ -532,11 +532,16 @@ func processClient(connection net.Conn) {
 }
 
 func main() {
-	fmt.Println("l1vmgodata <number of data entries>")
+	fmt.Println("l1vmgodata <port> <number of data entries>")
 	fmt.Println("l1vmgodata start...")
 
-	if len(os.Args) == 2 {
-		user_maxdata, err := strconv.ParseInt(os.Args[1], 10, 64)
+	if len(os.Args) == 2 || len(os.Args) == 3 {
+		// get port from command line
+		server_port = os.Args[1]
+	}
+	if len(os.Args) == 3 {
+		// get maxdata from command line
+		user_maxdata, err := strconv.ParseInt(os.Args[2], 10, 64)
 		if err != nil {
 			panic(err)
 		}

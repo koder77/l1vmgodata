@@ -10,5 +10,6 @@ L1VMgodata - (0.6)
     Remove data function added.
 
     Added save/load functions, to write/read from disk.
+    Now the port and the maxdata data limit can be set on command line.
 
--- Stefan Pietzonke <jay-t@gmx.net> Thu 14 Apr 2022 13:59 +0200
+-- Stefan Pietzonke <jay-t@gmx.net> Thu 14 Apr 2022 17:54 +0200
