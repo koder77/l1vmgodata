@@ -30,14 +30,37 @@ save
 load
 ```
 
+Get key/remove:
+
+```
+get key :foobar
+test 1234
+```
+
+Get value:
+
+```
+get value "test 1234"
+foobar
+```
+
 Save example:
 
 ```
 save :save "test.db"
+OK
 ```
 
 Load:
 
 ```
-load :load "test.db"
+load :load "test.db"#
+OK
+```
+
+Close client connection:
+
+```
+close
+OK
 ```
