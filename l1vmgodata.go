@@ -414,7 +414,7 @@ func main() {
 	fmt.Println("l1vmgodata <number of data entries>")
 	fmt.Println("l1vmgodata start...")
 
-	if os.Args[1] != "" {
+	if len(os.Args) == 2 {
 		user_maxdata, err := strconv.ParseInt(os.Args[1], 10, 64)
 		if err != nil {
 			panic(err)
