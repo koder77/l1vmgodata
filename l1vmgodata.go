@@ -413,7 +413,6 @@ func processClient(connection net.Conn) {
 func main() {
 	fmt.Println("l1vmgodata <number of data entries>")
 	fmt.Println("l1vmgodata start...")
-	// var user_maxdata int64
 
 	if os.Args[1] != "" {
 		user_maxdata, err := strconv.ParseInt(os.Args[1], 10, 64)
