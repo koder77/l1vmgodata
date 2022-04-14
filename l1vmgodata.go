@@ -29,6 +29,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -162,6 +163,7 @@ func remove_data(key string) string {
 				(*pdata)[i].used = false
 				(*pdata)[i].key = ""
 				(*pdata)[i].value = ""
+				dmutex.Unlock()
 				return value
 			}
 		}
@@ -378,6 +380,24 @@ func processClient(connection net.Conn) {
 			}
 		}
 
+		// remove data, send value
+		regexp_rdata := regexp.MustCompile(REMOVE_DATA)
+		match = regexp_rdata.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching key
+			key = split_key(string(buffer[:mLen]))
+			if key != "" {
+				value = remove_data(key)
+				if value != "" {
+					_, err = connection.Write([]byte(value))
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
+		}
+
 		// check close
 		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
 		match = regexp_close.Match([]byte(buffer[:mLen]))
@@ -391,7 +411,18 @@ func processClient(connection net.Conn) {
 }
 
 func main() {
+	fmt.Println("l1vmgodata <number of data entries>")
 	fmt.Println("l1vmgodata start...")
+	// var user_maxdata int64
+
+	if os.Args[1] != "" {
+		user_maxdata, err := strconv.ParseInt(os.Args[1], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		maxdata = user_maxdata
+	}
+	fmt.Println("allocating ", maxdata, " space for data")
 	servdata := make([]data, maxdata) // make serverdata spice
 	pdata = &servdata
 
