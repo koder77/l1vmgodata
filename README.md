@@ -18,8 +18,10 @@ get key :test
 
 The commands are:
 
+```
 store data
 get key
 get value
 remove
 close
+```
