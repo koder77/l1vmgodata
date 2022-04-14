@@ -1,8 +1,6 @@
 // l1vmgodata.go - database in go
-// work in progress, currently only echoes client message
-
 /*
- * This file l1vmgodata.go is part of l1vmgodata.
+ * This file l1vmgodata.go is part of L1VMgodata.
  *
  * (c) Copyright Stefan Pietzonke (jay-t@gmx.net), 2022
  *
