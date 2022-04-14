@@ -29,6 +29,7 @@ import (
 	"net"
 	"os"
 	"regexp"
+	"strings"
 	"sync"
 )
 
@@ -110,14 +111,12 @@ func get_data_key(key string) string {
 	var i int64
 	var match bool
 
-	regexp := regexp.MustCompile(key)
+	skey := strings.Trim(key, "\n")
+	regexp := regexp.MustCompile(skey)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-
-			fmt.Println("get_data_key: ", (*pdata)[i].key)
-
 			match = regexp.Match([]byte((*pdata)[i].key))
 			if match {
 				return (*pdata)[i].value
@@ -133,7 +132,8 @@ func get_data_value(value string) string {
 	var i int64
 	var match bool
 
-	regexp := regexp.MustCompile(value)
+	svalue := strings.Trim(value, "\n")
+	regexp := regexp.MustCompile(svalue)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
@@ -240,7 +240,7 @@ func split_data(input string) (string, string) {
 	return inkey, invalue
 }
 
-func split_key(input string, key *string) int {
+func split_key(input string) string {
 	var i int = 0
 	var search bool = true
 	var copy bool = true
@@ -253,7 +253,7 @@ func split_key(input string, key *string) int {
 			if i >= inplen {
 				copy = false
 				search = false
-				return 1
+				return ""
 			}
 			i++
 			for copy {
@@ -272,11 +272,10 @@ func split_key(input string, key *string) int {
 		}
 		i++
 	}
-	key = &inkey
-	return 0
+	return inkey
 }
 
-func split_value(input string, value *string) int {
+func split_value(input string) string {
 	var i int = 0
 	var search bool = true
 	var copy bool = true
@@ -289,7 +288,7 @@ func split_value(input string, value *string) int {
 			if i >= inplen {
 				copy = false
 				search = false
-				return 1
+				return ""
 			}
 			i++
 			for copy {
@@ -308,8 +307,7 @@ func split_value(input string, value *string) int {
 		}
 		i++
 	}
-	value = &invalue
-	return 0
+	return invalue
 }
 
 func processClient(connection net.Conn) {
@@ -352,7 +350,8 @@ func processClient(connection net.Conn) {
 		if match {
 			// store key/value pair
 			// try to store data
-			if split_key(string(buffer[:mLen]), &key) == 0 {
+			key = split_key(string(buffer[:mLen]))
+			if key != "" {
 				value = get_data_key(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
@@ -368,6 +367,7 @@ func processClient(connection net.Conn) {
 		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
 		match = regexp_close.Match([]byte(buffer[:mLen]))
 		if match {
+			_, err = connection.Write([]byte("OK\n"))
 			run_loop = false
 		}
 	}
