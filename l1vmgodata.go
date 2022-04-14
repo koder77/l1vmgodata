@@ -304,7 +304,6 @@ func split_value(input string) string {
 		}
 		i++
 	}
-	fmt.Println("split_value: ", invalue)
 	return invalue
 }
 
