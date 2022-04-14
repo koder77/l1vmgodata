@@ -25,6 +25,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -48,6 +49,8 @@ const (
 	GET_DATA_VALUE   = "get value"
 	REMOVE_DATA      = "remove"
 	CLOSE_CONNECTION = "close"
+	SAVE_DATA        = "save"
+	LOAD_DATA        = "load"
 )
 
 type data struct {
@@ -115,7 +118,8 @@ func get_data_key(key string) string {
 			match = regexp.Match([]byte((*pdata)[i].key))
 			if match {
 				dmutex.Unlock()
-				return (*pdata)[i].value
+				nvalue := strings.Trim((*pdata)[i].value, "\n")
+				return nvalue
 			}
 		}
 	}
@@ -137,7 +141,8 @@ func get_data_value(value string) string {
 			match = regexp.Match([]byte((*pdata)[i].value))
 			if match {
 				dmutex.Unlock()
-				return (*pdata)[i].key
+				nvalue := strings.Trim((*pdata)[i].key, "\n")
+				return nvalue
 			}
 		}
 	}
@@ -171,6 +176,87 @@ func remove_data(key string) string {
 	dmutex.Unlock()
 	// no matching key found, return empty string
 	return ""
+}
+
+func save_data(file_path string) int {
+	var i int64 = 0
+	// create file
+	f, err := os.Create(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer f.Close()
+
+	// write header
+	_, err = f.WriteString("l1vmgodata database\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
+
+	// write data loop
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			dmutex.Lock()
+			value_save := strings.Trim((*pdata)[i].value, "\n")
+			_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
+			dmutex.Unlock()
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				return 1
+			}
+		}
+	}
+	return 0
+}
+
+func load_data(file_path string) int {
+	var i int64 = 0
+	var header_line = 0
+	var key string
+	var value string
+	// load database file
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + " " + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer file.Close()
+
+	// read and check header
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if i < maxdata {
+			// enough data memory, load data
+			if header_line == 0 {
+				if line != "l1vmgodata database" {
+					fmt.Println("Error opening database file: " + file_path + " not a l1vmgodata database!")
+					return 1
+				}
+				header_line = 1
+			} else {
+				fmt.Println("read: " + line + "\n")
+				key, value = split_data(line)
+				if key != "" {
+					// store data
+					dmutex.Lock()
+					(*pdata)[i].used = true
+					(*pdata)[i].key = key
+					(*pdata)[i].value = value
+					dmutex.Unlock()
+					i++
+				}
+			}
+		} else {
+			fmt.Println("Error reading data base: out of memory: entries overflow!")
+			return 1
+		}
+	}
+	return 0
 }
 
 func run_server() {
@@ -353,6 +439,7 @@ func processClient(connection net.Conn) {
 				value = get_data_key(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+					_, err = connection.Write([]byte("\n"))
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 				}
@@ -390,6 +477,7 @@ func processClient(connection net.Conn) {
 				value = remove_data(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+					_, err = connection.Write([]byte("\n"))
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 				}
@@ -405,6 +493,41 @@ func processClient(connection net.Conn) {
 			_, err = connection.Write([]byte("OK\n"))
 			run_loop = false
 		}
+
+		// check save
+		regexp_save := regexp.MustCompile(SAVE_DATA)
+		match = regexp_save.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if save_data(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
+		}
+
+		// check load
+		regexp_load := regexp.MustCompile(LOAD_DATA)
+		match = regexp_load.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if load_data(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
+		}
+
 	}
 
 	connection.Close()

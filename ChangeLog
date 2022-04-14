@@ -1,4 +1,4 @@
-L1VMgodata - (0.5)
+L1VMgodata - (0.6)
     Initial commit with some TCP/IP server socket code.
     This is my first go project. It will be a data base if it finished.
 
@@ -9,4 +9,6 @@ L1VMgodata - (0.5)
     Added remove data function.
     Remove data function added.
 
--- Stefan Pietzonke <jay-t@gmx.net> Wed 14 Apr 2022 03:13 +0200
+    Added save/load functions, to write/read from disk.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Thu 14 Apr 2022 13:59 +0200

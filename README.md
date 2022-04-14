@@ -27,4 +27,18 @@ get key
 get value
 remove
 close
+save
+load
+```
+
+Save example:
+
+```
+save :save "test.db"
+```
+
+Load:
+
+```
+load :load "test.db"
 ```
