@@ -3,7 +3,7 @@ L1VMgodata
 This is my first go project. It will be a simple database like L1VM data, if it is finished.
 This database is written for data exchange between programs.
 New save/load function added to write/read whole database from disk!
-At the moment you can connect via:
+You can connect via:
 
 ```
 $ nc localhost 2000
