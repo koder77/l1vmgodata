@@ -7,9 +7,6 @@ At the moment you can connect via:
 $ nc localhost 2000
 ```
 
-And type in some text, which the server then reads.
-TODO: client handling sockets code.
-
 Via nc you can send the "store data" command:
 
 ```
@@ -18,3 +15,11 @@ OK
 get key :test
 12345
 ```
+
+The commands are:
+
+store data
+get key
+get value
+remove
+close
