@@ -54,7 +54,7 @@ OK
 Load:
 
 ```
-load :load "test.db"#
+load :load "test.db"
 OK
 ```
 
