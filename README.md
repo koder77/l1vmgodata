@@ -2,8 +2,7 @@ L1VMgodata
 ==========
 This is my first go project. It will be a simple database like L1VM data, if it is finished.
 This database is written for data exchange between programs.
-At the moment there is no save/read to disk function.
-So the data is only stored in RAM!
+New save/load function added to write/read whole database from disk!
 At the moment you can connect via:
 
 ```
