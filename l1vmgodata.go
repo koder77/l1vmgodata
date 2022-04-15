@@ -56,14 +56,14 @@ type data struct {
 	value string
 }
 
-var maxdata int64 = 10000 // max data number
+var maxdata uint64 = 10000 // max data number
 var server_port string = "2000"
 var pdata *[]data
 
 var dmutex sync.Mutex // data mutex
 
 func init_data() {
-	var i int64
+	var i uint64
 	for i = 0; i < maxdata; i++ {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
@@ -71,25 +71,26 @@ func init_data() {
 	}
 }
 
-func get_free_space() int64 {
-	var i int64
+func get_free_space() (int, uint64) {
+	var i uint64
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
 			dmutex.Unlock()
-			return i
+			return 0, i
 		}
 	}
 	dmutex.Unlock()
-	// no free space found, return -1
-	return -1
+	// no free space found, return error code 1
+	return 1, i
 }
 
-func store_data(key string, value string) int {
-	var i int64 = 0
+func store_data(key string, value string) uint64 {
+	var i uint64 = 0
+	var err int = 0
 
-	i = get_free_space()
-	if i < 0 {
+	err, i = get_free_space()
+	if err == 1 {
 		// error: no fre space
 		return 1
 	}
@@ -104,7 +105,7 @@ func store_data(key string, value string) int {
 }
 
 func get_data_key(key string) string {
-	var i int64
+	var i uint64
 	var match bool
 
 	skey := strings.Trim(key, "\n")
@@ -127,7 +128,7 @@ func get_data_key(key string) string {
 }
 
 func get_data_value(value string) string {
-	var i int64
+	var i uint64
 	var match bool
 
 	// svalue := strings.Trim(value, "\n")
@@ -150,7 +151,7 @@ func get_data_value(value string) string {
 }
 
 func remove_data(key string) string {
-	var i int64
+	var i uint64
 	var match bool
 	var value string
 
@@ -177,7 +178,7 @@ func remove_data(key string) string {
 }
 
 func save_data(file_path string) int {
-	var i int64 = 0
+	var i uint64 = 0
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -211,7 +212,7 @@ func save_data(file_path string) int {
 }
 
 func load_data(file_path string) int {
-	var i int64 = 0
+	var i uint64 = 0
 	var header_line = 0
 	var key string
 	var value string
@@ -608,7 +609,7 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		maxdata = user_maxdata
+		maxdata = uint64(user_maxdata)
 	}
 	fmt.Println("allocating ", maxdata, " space for data")
 	servdata := make([]data, maxdata) // make serverdata spice
