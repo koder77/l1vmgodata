@@ -404,7 +404,7 @@ func processClient(connection net.Conn) {
 	for run_loop {
 		mLen, err := connection.Read(buffer)
 		if err != nil {
-			fmt.Println("Error reading:", err.Error())
+			fmt.Println("processClient: Error reading:", err.Error())
 		}
 		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
 		// fmt.Println("length: ", mLen)
@@ -419,11 +419,20 @@ func processClient(connection net.Conn) {
 			if key != "" {
 				if store_data(key, value) == 0 {
 					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
@@ -437,12 +446,24 @@ func processClient(connection net.Conn) {
 				value = get_data_key(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 					_, err = connection.Write([]byte("\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
@@ -456,12 +477,24 @@ func processClient(connection net.Conn) {
 				key = get_data_value(value)
 				if key != "" {
 					_, err = connection.Write([]byte(key))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 					_, err = connection.Write([]byte("\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
@@ -475,12 +508,24 @@ func processClient(connection net.Conn) {
 				value = remove_data(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 					_, err = connection.Write([]byte("\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
@@ -501,11 +546,20 @@ func processClient(connection net.Conn) {
 			if value != "" {
 				if save_data(value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
@@ -518,11 +572,20 @@ func processClient(connection net.Conn) {
 			if value != "" {
 				if load_data(value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
 			}
 		}
 
