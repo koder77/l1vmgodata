@@ -1,6 +1,6 @@
 // stringfunc.go - database in go
 /*
- * This file l1vmgodata.go is part of L1VMgodata.
+ * This file stringfunc.go is part of L1VMgodata.
  *
  * (c) Copyright Stefan Pietzonke (jay-t@gmx.net), 2022
  *
