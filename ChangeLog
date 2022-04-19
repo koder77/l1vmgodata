@@ -1,4 +1,4 @@
-L1VMgodata - (0.6)
+L1VMgodata - (0.7)
     Initial commit with some TCP/IP server socket code.
     This is my first go project. It will be a data base if it finished.
 
@@ -14,4 +14,6 @@ L1VMgodata - (0.6)
 
     NEW: processClient error code checks.
 
--- Stefan Pietzonke <jay-t@gmx.net> Fri 15 Apr 2022 15:17 +0200
+    NEW: added host ip command line setting.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Tue 19 Apr 2022 17:14 +0200
