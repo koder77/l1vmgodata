@@ -3,6 +3,8 @@ L1VMgodata
 This is my first go project. It will be a simple database like L1VM data, if it is finished.
 This database is written for data exchange between programs.
 New save/load function added to write/read whole database from disk!
+NEW: added IP whitelist: "whitelist.txt" in which you can set all allowed client IPs!
+
 You can connect via:
 
 ```

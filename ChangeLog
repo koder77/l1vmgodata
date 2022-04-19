@@ -15,5 +15,6 @@ L1VMgodata - (0.7)
     NEW: processClient error code checks.
 
     NEW: added host ip command line setting.
+    Added IP addresses whitelist.
 
--- Stefan Pietzonke <jay-t@gmx.net> Tue 19 Apr 2022 17:14 +0200
+-- Stefan Pietzonke <jay-t@gmx.net> Tue 19 Apr 2022 19:21 +0200

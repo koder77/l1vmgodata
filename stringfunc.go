@@ -22,6 +22,17 @@
 
 package main
 
+func get_client_ip(address string) string {
+	var i int = 0
+	var ip_str string = ""
+	// get ip part before port: 192.168.0.1:4000
+	for address[i] != ':' {
+		ip_str = ip_str + string(address[i])
+		i++
+	}
+	return ip_str
+}
+
 func split_data(input string) (string, string) {
 	var i int = 0
 	var j int = 0

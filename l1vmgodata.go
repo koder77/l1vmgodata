@@ -23,6 +23,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -58,9 +59,51 @@ var server_port string = "2000"
 var server_host = "localhost"
 var pdata *[]data
 
+// ip addresses whitelist
+var ip_whitelist []string
+var ip_whitelist_ind uint64 = 0
+
 var dmutex sync.Mutex // data mutex
 
+func read_ip_whitelist() bool {
+	// load database file
+	file, err := os.Open("whitelist.txt")
+	if err != nil {
+		fmt.Println("Error opening file: whitelist.txt " + err.Error())
+		return false
+	}
+	// remember to close the file
+	defer file.Close()
+
+	// read one IP per line
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		// store ip
+		if len(line) >= 2 {
+			ip_whitelist = append(ip_whitelist, line)
+			fmt.Println("whitelist:", ip_whitelist[ip_whitelist_ind])
+			ip_whitelist_ind++
+		}
+	}
+	return true
+}
+
+func check_whitelist(ip string) bool {
+	var i uint64 = 0
+	for i = 0; i < ip_whitelist_ind; i++ {
+		if len(ip_whitelist[i]) > 1 && ip_whitelist[i] == ip {
+			fmt.Println("whitelist:", ip_whitelist[i])
+			// found ip in whitelist, return true
+			return true
+		}
+	}
+	// ip not found in whitelist, return false
+	return false
+}
+
 func run_server() {
+	var client_ip string
 	fmt.Println("run_server...")
 	server, err := net.Listen(SERVER_TYPE, server_host+":"+server_port)
 	if err != nil {
@@ -73,11 +116,16 @@ func run_server() {
 	for {
 		connection, err := server.Accept()
 		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
+			fmt.Println("Error accepting:", err.Error())
 			os.Exit(1)
 		}
-		fmt.Println("client connected")
-		go processClient(connection)
+		client_ip = get_client_ip(connection.RemoteAddr().String())
+		if check_whitelist(client_ip) {
+			fmt.Println("client connected:", client_ip)
+			go processClient(connection)
+		} else {
+			fmt.Println("access denied!", client_ip)
+		}
 	}
 }
 
@@ -303,8 +351,13 @@ func main() {
 		fmt.Println("Arguments error! Need ip and port!")
 		os.Exit(1)
 	}
+
+	if !read_ip_whitelist() {
+		os.Exit(1)
+	}
+
 	fmt.Println("allocating ", maxdata, " space for data")
-	servdata := make([]data, maxdata) // make serverdata spice
+	servdata := make([]data, maxdata) // make serverdata splice
 	pdata = &servdata
 
 	init_data()
