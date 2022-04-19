@@ -93,7 +93,6 @@ func check_whitelist(ip string) bool {
 	var i uint64 = 0
 	for i = 0; i < ip_whitelist_ind; i++ {
 		if len(ip_whitelist[i]) > 1 && ip_whitelist[i] == ip {
-			fmt.Println("whitelist:", ip_whitelist[i])
 			// found ip in whitelist, return true
 			return true
 		}
