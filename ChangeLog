@@ -1,3 +1,10 @@
+L1VMgodata - (0.7.1)
+    NEW: "erase all" command to delete the whole data base enttries.
+    Handle with care!
+
+-- Stefan Pietzonke <jay-t@gmx.net> Wed 20 Apr 2022 13:02 +0200
+
+
 L1VMgodata - (0.7)
     Initial commit with some TCP/IP server socket code.
     This is my first go project. It will be a data base if it finished.

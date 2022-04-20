@@ -30,6 +30,7 @@ remove
 close
 save
 load
+erase all
 ```
 
 Get key/remove:
@@ -64,5 +65,12 @@ Close client connection:
 
 ```
 close
+OK
+```
+
+Erase all data entries. Handle with care:
+
+```
+erase all
 OK
 ```

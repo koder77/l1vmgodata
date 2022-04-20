@@ -32,11 +32,13 @@ import (
 
 func init_data() {
 	var i uint64
+	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
 	}
+	dmutex.Unlock()
 }
 
 func get_free_space() (int, uint64) {

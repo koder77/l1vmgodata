@@ -46,6 +46,7 @@ const (
 	CLOSE_CONNECTION = "close"
 	SAVE_DATA        = "save"
 	LOAD_DATA        = "load"
+	ERASE_DATA       = "erase all"
 )
 
 type data struct {
@@ -324,6 +325,16 @@ func processClient(connection net.Conn) {
 			}
 		}
 
+		// check erase all data
+		regexp_erase_all := regexp.MustCompile(ERASE_DATA)
+		match = regexp_erase_all.Match([]byte(buffer[:mLen]))
+		if match {
+			init_data()
+			_, err = connection.Write([]byte("OK\n"))
+			if err != nil {
+				fmt.Println("processClient: Error writing:", err.Error())
+			}
+		}
 	}
 
 	connection.Close()
