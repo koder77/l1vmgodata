@@ -9,3 +9,6 @@ $ go tool dist list
 
 build using os/arch 
 $ GOOS=windows GOARCH=amd64 go build
+
+run remote on server via ssh:
+$ nohup ./l1vmgodata.sh &

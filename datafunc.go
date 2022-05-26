@@ -30,6 +30,25 @@ import (
 	"strings"
 )
 
+// search if key was already set and return 1, or 0 if not already set!
+func search_key(search_key string) (int, uint64) {
+	var i uint64
+
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			if (*pdata)[i].key == search_key {
+				dmutex.Unlock()
+				// key already set
+				return 1, i
+			}
+		}
+	}
+	dmutex.Unlock()
+	// key not found
+	return 0, i
+}
+
 func init_data() {
 	var i uint64
 	dmutex.Lock()
@@ -59,10 +78,14 @@ func store_data(key string, value string) uint64 {
 	var i uint64 = 0
 	var err int = 0
 
-	err, i = get_free_space()
-	if err == 1 {
-		// error: no fre space
-		return 1
+	err, i = search_key (key)
+	if err == 0 {
+		// key not already used, get free space
+		err, i = get_free_space()
+		if err == 1 {
+			// error: no free space
+			return 1
+		}
 	}
 
 	// store data at index i

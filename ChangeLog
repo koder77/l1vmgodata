@@ -2,7 +2,9 @@ L1VMgodata - (0.7.1)
     NEW: "erase all" command to delete the whole data base enttries.
     Handle with care!
 
--- Stefan Pietzonke <jay-t@gmx.net> Wed 20 Apr 2022 13:02 +0200
+    NEW: now the store data command overwrites existing entries if the same key was used more than one time!
+
+-- Stefan Pietzonke <jay-t@gmx.net> Thu 26 Apr 2022 17:02 +0200
 
 
 L1VMgodata - (0.7)
