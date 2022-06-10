@@ -46,6 +46,7 @@ const (
 	CLOSE_CONNECTION = "close"
 	SAVE_DATA        = "save"
 	LOAD_DATA        = "load"
+	SAVE_DATA_JSON   = "json-export"
 	ERASE_DATA       = "erase all"
 )
 
@@ -307,6 +308,32 @@ func processClient(connection net.Conn) {
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
 				if load_data(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("processClient: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error writing:", err.Error())
+				}
+			}
+		}
+
+		// check save
+		regexp_save_json := regexp.MustCompile(SAVE_DATA_JSON)
+		match = regexp_save_json.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if save_data_json(value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("processClient: Error writing:", err.Error())

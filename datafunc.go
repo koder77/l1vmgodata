@@ -250,3 +250,52 @@ func load_data(file_path string) int {
 	}
 	return 0
 }
+
+// export to .json data file
+func save_data_json(file_path string) int {
+	var i uint64 = 0
+	// create file
+	f, err := os.Create(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer f.Close()
+
+	// write header
+	_, err = f.WriteString("{ \"l1vmgodata database\" :[\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
+
+	// write data loop
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			dmutex.Lock()
+			value_save := strings.Trim((*pdata)[i].value, "\n")
+			_, err = f.WriteString("{ \"key\": \"" + (*pdata)[i].key + "\", \"value\": \"" + value_save + "\" },\n")
+			dmutex.Unlock()
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				return 1
+			}
+		}
+	}
+
+	// remove last comma to create valid json file:
+	_, err = f.Seek(-2, 1)
+	if err != nil {
+		fmt.Println("Error seeking database file:", err.Error())
+		return 1
+	}
+
+	_, err = f.WriteString("\n]\n}\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
+
+	return 0
+}
