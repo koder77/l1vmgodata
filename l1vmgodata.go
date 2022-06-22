@@ -159,8 +159,6 @@ func processClient(connection net.Conn) {
 					if err != nil {
 						fmt.Println("processClient: Error writing:", err.Error())
 					}
-
-					fmt.Println("DEBUG: store data: ", key, " ", value)
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
