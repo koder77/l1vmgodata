@@ -161,7 +161,8 @@ func remove_data(key string) string {
 				(*pdata)[i].key = ""
 				(*pdata)[i].value = ""
 				dmutex.Unlock()
-				return value
+				nvalue := strings.Trim(value, "\n")
+				return nvalue
 			}
 		}
 	}

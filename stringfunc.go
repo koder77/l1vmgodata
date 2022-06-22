@@ -70,7 +70,7 @@ func split_data(input string) (string, string) {
 
 	// read chars into data
 	for j = i; j < inplen; j++ {
-		if input[i] != '"' {
+		if input[i] != '\'' {
 			invalue = invalue + string(input[i])
 		}
 		i++
@@ -121,7 +121,7 @@ func split_value(input string) string {
 	var inplen int = 0
 	inplen = len(input)
 	for search {
-		if input[i] == '"' {
+		if input[i] == '\'' {
 			// store chars until next quote char
 			if i >= inplen {
 				copy = false
@@ -130,7 +130,7 @@ func split_value(input string) string {
 			}
 			i++
 			for copy {
-				if input[i] != '"' {
+				if input[i] != '\'' {
 					invalue = invalue + string(input[i])
 				} else {
 					copy = false
