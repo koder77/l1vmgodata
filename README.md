@@ -80,7 +80,7 @@ Export data base into ".json" file:
 json-export :json 'test.json'
 ```
 
-Import data base into ".json" file:
+Import data base from ".json" file:
 
 ```
 json-import :json 'test.json'
