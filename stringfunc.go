@@ -22,6 +22,10 @@
 
 package main
 
+import (
+	"strings"
+)
+
 func get_client_ip(address string) string {
 	var i int = 0
 	var ip_str string = ""
@@ -75,6 +79,94 @@ func split_data(input string) (string, string) {
 		}
 		i++
 	}
+	return inkey, invalue
+}
+
+func split_data_json(input string) (string, string) {
+	var i int = 0
+	var search bool = true
+	var copy bool = true
+	var inkey string = ""
+	var invalue string = ""
+	var inplen int = 0
+	var pos int = 0
+	var asciicode int = 0
+	inplen = len(input)
+	// search for: "key":
+	pos = strings.Index(input, "\"key\":")
+	if pos == -1 {
+		// error: key part not found in string line
+		return "", ""
+	}
+	// get key
+	i = pos + 6
+	for search {
+		asciicode = int(input[i])
+		if asciicode == 34 {
+			// found quote char
+			if i >= inplen {
+				copy = false
+				search = false
+				return "", ""
+			}
+			i++
+			for copy {
+				asciicode = int(input[i])
+				if asciicode != 34 {
+					inkey = inkey + string(input[i])
+				} else {
+					copy = false
+					search = false
+				}
+				i++
+				if i >= inplen {
+					copy = false
+					search = false
+				}
+
+			}
+		}
+		i++
+	}
+
+	search = true
+	copy = true
+	pos = strings.Index(input, "\"value\":")
+	if pos == -1 {
+		// error: key part not found in string line
+		return "", ""
+	}
+	// get value
+	i = pos + 8
+	for search {
+		asciicode = int(input[i])
+		if asciicode == 34 {
+			// found quote char
+			if i >= inplen {
+				copy = false
+				search = false
+				return "", ""
+			}
+			i++
+			for copy {
+				asciicode = int(input[i])
+				if asciicode != 34 {
+					invalue = invalue + string(input[i])
+				} else {
+					copy = false
+					search = false
+				}
+				i++
+				if i >= inplen {
+					copy = false
+					search = false
+				}
+
+			}
+		}
+		i++
+	}
+
 	return inkey, invalue
 }
 

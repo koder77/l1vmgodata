@@ -7,6 +7,8 @@ NEW: added IP whitelist: "whitelist.txt" in which you can set all allowed client
 
 NEW: added "json-export" command to export the data base into a ".json" file.
 NEW: now single quotes: ' are used for data!
+NEW: added Json import!
+
 You can connect via:
 
 ```
@@ -33,6 +35,7 @@ close
 save
 load
 json-export
+json-import
 erase all
 ```
 
@@ -76,6 +79,13 @@ Export data base into ".json" file:
 ```
 json-export :json 'test.json'
 ```
+
+Import data base into ".json" file:
+
+```
+json-import :json 'test.json'
+```
+
 
 Erase all data entries. Handle with care:
 

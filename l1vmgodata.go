@@ -47,6 +47,7 @@ const (
 	SAVE_DATA        = "save"
 	LOAD_DATA        = "load"
 	SAVE_DATA_JSON   = "json-export"
+	LOAD_DATA_JSON 	 = "json-import"
 	ERASE_DATA       = "erase all"
 )
 
@@ -351,6 +352,33 @@ func processClient(connection net.Conn) {
 				}
 			}
 		}
+
+		// check load
+		regexp_load_json := regexp.MustCompile(LOAD_DATA_JSON)
+		match = regexp_load_json.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if load_data_json(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("processClient: Error loading:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("processClient: Error loading:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("processClient: Error loading:", err.Error())
+				}
+			}
+		}
+
 
 		// check erase all data
 		regexp_erase_all := regexp.MustCompile(ERASE_DATA)

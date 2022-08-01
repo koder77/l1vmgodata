@@ -78,7 +78,7 @@ func store_data(key string, value string) uint64 {
 	var i uint64 = 0
 	var err int = 0
 
-	err, i = search_key (key)
+	err, i = search_key(key)
 	if err == 0 {
 		// key not already used, get free space
 		err, i = get_free_space()
@@ -298,5 +298,55 @@ func save_data_json(file_path string) int {
 		return 1
 	}
 
+	return 0
+}
+
+// import .json file
+func load_data_json(file_path string) int {
+	var i uint64 = 0
+	var header_line = 0
+	var key string
+	var value string
+	// open file
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + " " + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer file.Close()
+
+	// read and check header
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if i < maxdata {
+			// enough data memory, load data
+			if header_line == 0 {
+				if line != "{ \"l1vmgodata database\" :[" {
+					fmt.Println("Error opening database file: " + file_path + " not a json l1vmgodata database!")
+					return 1
+				}
+				header_line = 1
+			} else {
+				fmt.Println("read: " + line + "\n")
+				key, value = split_data_json(line)
+				// fmt.Println("key: " +key + " value: " + value +"\n")
+
+				if key != "" {
+					// store data
+					dmutex.Lock()
+					(*pdata)[i].used = true
+					(*pdata)[i].key = key
+					(*pdata)[i].value = value
+					dmutex.Unlock()
+					i++
+				}
+			}
+		} else {
+			fmt.Println("Error reading data base: out of memory: entries overflow!")
+			return 1
+		}
+	}
 	return 0
 }
