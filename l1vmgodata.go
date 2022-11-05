@@ -39,16 +39,17 @@ const (
 
 // data base commands
 const (
-	STORE_DATA       = "store data"
-	GET_DATA_KEY     = "get key"
-	GET_DATA_VALUE   = "get value"
-	REMOVE_DATA      = "remove"
-	CLOSE_CONNECTION = "close"
-	SAVE_DATA        = "save"
-	LOAD_DATA        = "load"
-	SAVE_DATA_JSON   = "json-export"
-	LOAD_DATA_JSON 	 = "json-import"
-	ERASE_DATA       = "erase all"
+	STORE_DATA      	 = "store data"
+	GET_DATA_KEY    	 = "get key"
+	GET_DATA_VALUE 	     = "get value"
+	REMOVE_DATA      	 = "remove"
+	CLOSE_CONNECTION 	 = "close"
+	SAVE_DATA        	 = "save"
+	LOAD_DATA       	 = "load"
+	SAVE_DATA_JSON   	 = "json-export"
+	LOAD_DATA_JSON 		 = "json-import"
+	ERASE_DATA       	 = "erase all"
+	GET_USED_ELEMENTS 	 = "usage"
 )
 
 type data struct {
@@ -136,6 +137,9 @@ func processClient(connection net.Conn) {
 	buffer := make([]byte, 4096)
 	var key string = ""
 	var value string = ""
+	var used_space uint64 = 0
+	var used_space_percent float64 = 0.0
+	var info string = ""
 
 	var match bool
 
@@ -388,6 +392,20 @@ func processClient(connection net.Conn) {
 			_, err = connection.Write([]byte("OK\n"))
 			if err != nil {
 				fmt.Println("processClient: Error writing:", err.Error())
+			}
+		}
+
+		// check get free elements
+		regexp_get_used_elements := regexp.MustCompile(GET_USED_ELEMENTS)
+		match = regexp_get_used_elements.Match([]byte(buffer[:mLen]))
+		if match {
+			used_space = get_used_elements()
+			used_space_percent = float64(100 * used_space / maxdata)
+
+            info = "USAGE " + strconv.FormatFloat(used_space_percent, 'f', 2, 64) + "% : " + strconv.FormatUint(used_space, 10) + " of " + strconv.FormatUint(maxdata, 10) + "\n"
+			_, err = connection.Write([]byte(info))
+			if err != nil {
+				fmt.Println("processClient: Error sending space usage.", err.Error())
 			}
 		}
 	}

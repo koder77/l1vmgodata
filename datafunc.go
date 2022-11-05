@@ -350,3 +350,19 @@ func load_data_json(file_path string) int {
 	}
 	return 0
 }
+
+// get info about data base usage, return used space
+func get_used_elements() (uint64) {
+	var i uint64
+	var free uint64 = 0
+
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			free++
+		}
+	}
+	dmutex.Unlock()
+	// return free data space
+	return free
+}

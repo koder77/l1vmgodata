@@ -37,6 +37,7 @@ load
 json-export
 json-import
 erase all
+usage
 ```
 
 Get key/remove:
@@ -92,4 +93,11 @@ Erase all data entries. Handle with care:
 ```
 erase all
 OK
+```
+
+Get data usage
+
+```
+usage
+USAGE 0.00% : 1 of 10000
 ```
