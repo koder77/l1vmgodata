@@ -95,7 +95,7 @@ erase all
 OK
 ```
 
-Get data usage
+Get data usage:
 
 ```
 usage
