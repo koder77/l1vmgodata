@@ -1,3 +1,8 @@
+L1VMgodata - (0.8.0)
+    NEW: web browser interface form.
+    Now you can switch it off by using "off" as the port!
+-- Stefan Pietzonke <jay-t@gmx.net> Wed 16 Nov 2022 16:54 +0100
+
 L1VMgodata - (0.7.1)
     NEW: "erase all" command to delete the whole data base enttries.
     Handle with care!

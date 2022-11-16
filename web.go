@@ -122,6 +122,9 @@ func hello(w http.ResponseWriter, r *http.Request) {
 }
 
 func handle_http_request() {
+	fmt.Println("Web Listening on " + server_host + ":" + server_http_port)
+	fmt.Println("Waiting for client...")
+
 	port := flag.String("p", server_http_port, "port to serve on")
 	// directory := flag.String("d", "./statics", "the directory of static file to host")
 	flag.Parse()

@@ -60,7 +60,7 @@ type data struct {
 
 var maxdata uint64 = 10000 // max data number
 var server_port string = "2000"
-var server_http_port string = "2001"
+var server_http_port string = ""
 var server_host = "localhost"
 var pdata *[]data
 
@@ -109,7 +109,9 @@ func check_whitelist(ip string) bool {
 func run_server() {
 	var client_ip string
 	fmt.Println("run_server...")
-	go handle_http_request()
+	if server_http_port != "off" {
+		go handle_http_request()
+	}
 	server, err := net.Listen(SERVER_TYPE, server_host+":"+server_port)
 	if err != nil {
 		fmt.Println("Error listening:", err.Error())
@@ -416,8 +418,8 @@ func processClient(connection net.Conn) {
 }
 
 func main() {
-	fmt.Println("l1vmgodata <ip> <port> <http-port> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.7.2 ...")
+	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
+	fmt.Println("l1vmgodata start 0.8.0 ...")
 
 	if len(os.Args) == 4 || len(os.Args) == 5 {
 		server_host = os.Args[1]
@@ -434,7 +436,7 @@ func main() {
 	}
 	// check error case:
 	if len(os.Args) <= 2 {
-		fmt.Println("Arguments error! Need ip and port!")
+		fmt.Println("Arguments error! Need ip and ports!")
 		os.Exit(1)
 	}
 
