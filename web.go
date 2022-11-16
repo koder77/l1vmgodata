@@ -33,58 +33,58 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 	var used_elements uint64
 
 	switch command {
-		case "store data":
+		case STORE_DATA:
 			if store_data(key, value) != 0 {
 				fmt.Fprintf(w, "ERROR can't store data!\n")
 			} else {
 				fmt.Fprintf(w, "data stored!\n");
 			}
 
-		case "get key":
+		case GET_DATA_KEY:
 			value_ret = get_data_key(key)
 			fmt.Fprintf(w, "key: %s, value: %s\n", key, value_ret)
 
-		case "get value":
+		case GET_DATA_VALUE:
 			key_ret = get_data_value(value)
 			fmt.Fprintf(w, "key: %s, value: %s\n", key_ret, value)
 
-		case "remove":
+		case REMOVE_DATA:
 			value_ret = remove_data (key)
 			fmt.Fprintf(w, "%s\n", value_ret)
 
-		case "save":
+		case SAVE_DATA:
 			if save_data (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't save database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "database %s saved!\n", value)
 			}
 
-		case "load":
+		case LOAD_DATA:
 			if load_data (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't load database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "database %s loaded!\n", value)
 			}
 
-		case "json-export":
+		case SAVE_DATA_JSON:
 			if save_data_json (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't save JSON database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "JSON database %s saved!\n", value)
 			}
 
-		case "json-import":
+		case LOAD_DATA_JSON:
 			if load_data_json (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't load JSON database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "JSON database %s loaded!\n", value)
 			}
 
-		case "erase all":
+		case ERASE_DATA:
 			init_data()
 			fmt.Fprintf(w, "ALL DATA ERASED!\n");
 
-		case "usage":
+		case GET_USED_ELEMENTS:
 			used_elements = get_used_elements()
 			fmt.Fprintf(w, "usage: %d of %d\n", used_elements, maxdata)
 
