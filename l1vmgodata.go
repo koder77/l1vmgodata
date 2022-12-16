@@ -151,9 +151,21 @@ func processClient(connection net.Conn) {
 		mLen, err := connection.Read(buffer)
 		if err != nil {
 			fmt.Println("processClient: Error reading:", err.Error())
+			// end fot loop
+            run_loop = false
+			continue
 		}
 		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
 		// fmt.Println("length: ", mLen)
+
+		// check close
+		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
+		match = regexp_close.Match([]byte(buffer[:mLen]))
+		if match {
+			_, err = connection.Write([]byte("OK\n"))
+			run_loop = false
+			continue
+		}
 
 		// store data
 		regexp_store := regexp.MustCompile(STORE_DATA)
@@ -273,14 +285,6 @@ func processClient(connection net.Conn) {
 					fmt.Println("processClient: Error writing:", err.Error())
 				}
 			}
-		}
-
-		// check close
-		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
-		match = regexp_close.Match([]byte(buffer[:mLen]))
-		if match {
-			_, err = connection.Write([]byte("OK\n"))
-			run_loop = false
 		}
 
 		// check save
