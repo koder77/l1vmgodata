@@ -151,7 +151,7 @@ func processClient(connection net.Conn) {
 		mLen, err := connection.Read(buffer)
 		if err != nil {
 			fmt.Println("processClient: Error reading:", err.Error())
-			// end fot loop
+			// end for loop
             run_loop = false
 			continue
 		}
