@@ -58,6 +58,7 @@ func init_data() {
 		(*pdata)[i].value = ""
 	}
 	dmutex.Unlock()
+	data_index = 0
 }
 
 func get_free_space() (int, uint64) {
@@ -149,12 +150,13 @@ func remove_data(key string) string {
 	var value string
 
 	skey := strings.Trim(key, "\n")
-	regexp := regexp.MustCompile(skey)
+	// regexp := regexp.MustCompile(skey)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match = regexp.Match([]byte((*pdata)[i].key))
+			// match = regexp.Match([]byte((*pdata)[i].key))
+			match = (*pdata)[i].key == skey
 			if match {
 				value = (*pdata)[i].value
 				(*pdata)[i].used = false
@@ -219,6 +221,9 @@ func load_data(file_path string) int {
 	// remember to close the file
 	defer file.Close()
 
+	// set i to data_index, so we can load more than one database. And don't start on zero index again!
+	i = data_index
+
 	// read and check header
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -245,10 +250,11 @@ func load_data(file_path string) int {
 				}
 			}
 		} else {
-			fmt.Println("Error reading data base: out of memory: entries overflow!")
+			fmt.Println("Error reading database: out of memory: entries overflow!")
 			return 1
 		}
 	}
+	data_index = i
 	return 0
 }
 
@@ -316,6 +322,9 @@ func load_data_json(file_path string) int {
 	// remember to close the file
 	defer file.Close()
 
+	// set i to data_index, so we can load more than one database. And don't start on zero index again!
+	i = data_index
+
 	// read and check header
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -344,10 +353,11 @@ func load_data_json(file_path string) int {
 				}
 			}
 		} else {
-			fmt.Println("Error reading data base: out of memory: entries overflow!")
+			fmt.Println("Error reading database: out of memory: entries overflow!")
 			return 1
 		}
 	}
+	data_index = i
 	return 0
 }
 

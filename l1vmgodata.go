@@ -59,6 +59,7 @@ type data struct {
 }
 
 var maxdata uint64 = 10000 // max data number
+var data_index uint64 = 0 // for loading multiple databases into one big database
 var server_port string = "2000"
 var server_http_port string = ""
 var server_host = "localhost"
