@@ -4,7 +4,9 @@ L1VMgodata - (0.8.0)
 
     Now you can load multiple databases, as long there is enough space in set max entries!
 
--- Stefan Pietzonke <jay-t@gmx.net> Fri 3 Feb 2022 22:35 +0100
+    NEW: speeded up reading the database by removing print line!
+
+-- Stefan Pietzonke <jay-t@gmx.net> Sat 18 Mar 2023 17:26 +0100
 
 L1VMgodata - (0.7.1)
     NEW: "erase all" command to delete the whole data base enttries.

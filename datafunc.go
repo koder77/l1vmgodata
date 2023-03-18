@@ -237,9 +237,9 @@ func load_data(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				fmt.Println("read: " + line)
+				// fmt.Println("read: " + line)
 				key, value = split_data(line)
-				if key != "" {
+				if  key != "" {
 					// store data
 					dmutex.Lock()
 					(*pdata)[i].used = true
@@ -338,7 +338,7 @@ func load_data_json(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				fmt.Println("read: " + line)
+				// fmt.Println("read: " + line)
 				key, value = split_data_json(line)
 				// fmt.Println("key: " +key + " value: " + value +"\n")
 
