@@ -71,7 +71,6 @@ var ip_whitelist []string
 var ip_whitelist_ind uint64 = 0
 
 var dmutex sync.Mutex // data mutex
-var exit bool = false // used in process_client to exit l1vmgoadata
 
 func read_ip_whitelist() bool {
 	// load database file
@@ -133,13 +132,6 @@ func run_server() {
 		if check_whitelist(client_ip) {
 			fmt.Println("client connected:", client_ip)
 			go process_client(connection)
-
-			// check if exit is set to true
-			if exit == true {
-				// exit this for loop and exit database in main function
-				break
-			}
-
 		} else {
 			fmt.Println("access denied!", client_ip)
 		}
