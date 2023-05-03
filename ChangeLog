@@ -6,7 +6,9 @@ L1VMgodata - (0.8.0)
 
     NEW: speeded up reading the database by removing print line!
 
--- Stefan Pietzonke <jay-t@gmx.net> Sat 18 Mar 2023 17:26 +0100
+    NEW: exit command to quit the database.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Wed 03 May 2023 20:56 +0200
 
 L1VMgodata - (0.7.1)
     NEW: "erase all" command to delete the whole data base enttries.

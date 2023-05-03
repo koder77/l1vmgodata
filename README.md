@@ -1,6 +1,6 @@
 L1VMgodata
 ==========
-This is my first go project. It will be a simple database like L1VM data, if it is finished.
+This is my first go project.
 This database is written for data exchange between programs.
 New save/load function added to write/read whole database from disk!
 NEW: added IP whitelist: "whitelist.txt" in which you can set all allowed client IPs!
@@ -46,6 +46,7 @@ json-export
 json-import
 erase all
 usage
+exit
 ```
 
 Get key/remove:
@@ -116,3 +117,4 @@ I did add ```web.go``` webinterface for browser.
 You can store and load data in the web browser with the commands like above!
 The save and load functions use the value entry as the filename!
 
+exit command to quit the database
