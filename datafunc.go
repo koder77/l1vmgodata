@@ -111,7 +111,7 @@ func get_data_key(key string) string {
 			match = regexp.Match([]byte((*pdata)[i].key))
 			if match {
 				dmutex.Unlock()
-				nvalue := strings.Trim((*pdata)[i].value, "\n")
+				nvalue := strings.Trim((*pdata)[i].value, "'\n")
 				return nvalue
 			}
 		}
@@ -134,7 +134,7 @@ func get_data_value(value string) string {
 			match = regexp.Match([]byte((*pdata)[i].value))
 			if match {
 				dmutex.Unlock()
-				nvalue := strings.Trim((*pdata)[i].key, "\n")
+				nvalue := strings.Trim((*pdata)[i].key, "'\n")
 				return nvalue
 			}
 		}
@@ -163,7 +163,7 @@ func remove_data(key string) string {
 				(*pdata)[i].key = ""
 				(*pdata)[i].value = ""
 				dmutex.Unlock()
-				nvalue := strings.Trim(value, "\n")
+				nvalue := strings.Trim(value, "'\n")
 				return nvalue
 			}
 		}

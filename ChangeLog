@@ -1,3 +1,8 @@
+L1VMgodata - (0.8.1)
+        Added trim for data return functions: '\n' in datafunc.go.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Thu 21 Dec 2023 10:49 +0100
+
 L1VMgodata - (0.8.0)
     NEW: web browser interface form.
     Now you can switch it off by using "off" as the port!
