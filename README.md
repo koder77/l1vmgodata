@@ -1,5 +1,5 @@
-L1VMgodata
-==========
+L1VMgodata 0.9.0
+================
 This is my first go project.
 This database is written for data exchange between programs.
 New save/load function added to write/read whole database from disk!
@@ -47,6 +47,10 @@ json-import
 erase all
 usage
 exit
+set-link
+rem-link
+get-links-number
+get-link-name
 ```
 
 Get key/remove:
@@ -113,6 +117,41 @@ USAGE 0.00% : 1 of 10000
 
 NEW
 ===
+Set links between key values. You can save multiple links between data.
+Here are the commands:
+
+Set link:
+
+```
+store data :water-n 'water'
+OK
+store data :water-chem 'H2O' 
+OK
+set-link :water-n 'water-chem'
+OK
+```
+
+Get links total number:
+
+```
+get-links-number :water-n ''
+1
+```
+
+Get link index 0:
+
+```
+get-link-name :water-n '0'
+water-chem
+``` 
+
+Remove link:
+
+```
+rem-link :water-n 'water-chem'
+OK
+```
+
 I did add ```web.go``` webinterface for browser.
 You can store and load data in the web browser with the commands like above!
 The save and load functions use the value entry as the filename!

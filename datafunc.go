@@ -28,6 +28,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"strconv"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -175,6 +176,8 @@ func remove_data(key string) string {
 
 func save_data(file_path string) int {
 	var i uint64 = 0
+	var l uint64 = 0
+	var linkslen uint64  = 0
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -197,11 +200,35 @@ func save_data(file_path string) int {
 			dmutex.Lock()
 			value_save := strings.Trim((*pdata)[i].value, "\n")
 			_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				dmutex.Unlock()
+				return 1
+			}
+
+			// save links number
+			linkslen = uint64 (len ((*pdata)[i].links))
+			_, err = f.WriteString(":link" + " \"" + strconv.FormatInt (int64 (linkslen), 10) + "\"\n")
 			dmutex.Unlock()
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
 				return 1
 			}
+
+			// save links
+			if linkslen > 0 {
+				for l = 0; l < linkslen; l++  {
+					dmutex.Lock()
+					_, err = f.WriteString(":link" + " \"" + strconv.FormatInt (int64 ((*pdata)[i].links[l]), 10) + "\"\n")
+					if err != nil {
+						fmt.Println("Error writing database file:", err.Error())
+						dmutex.Unlock()
+						return 1
+					}
+					dmutex.Unlock()
+			    }
+			}
+            return 0
 		}
 	}
 	return 0
@@ -212,6 +239,11 @@ func load_data(file_path string) int {
 	var header_line = 0
 	var key string
 	var value string
+	var l uint64 = 0
+	var linkslen uint64  = 0
+	var reading_links uint64 = 0
+	var link uint64 = 0
+
 	// load database file
 	file, err := os.Open(file_path)
 	if err != nil {
@@ -239,7 +271,26 @@ func load_data(file_path string) int {
 			} else {
 				// fmt.Println("read: " + line)
 				key, value = split_data(line)
-				if  key != "" {
+				if key == "link" && reading_links == 0 {
+					// read number of links
+					reading_links = 1
+					linkslen, _  =  strconv.ParseUint (value, 10, 64)
+					continue
+				}
+				if key == "link" && reading_links == 1 {
+					// load links
+					if linkslen > 0 {
+						dmutex.Lock()
+						for l = 0; l < linkslen; l++  {
+							link, _ = strconv.ParseUint (value, 10, 64)
+							(*pdata)[i].links = append ((*pdata)[i].links, link)
+						}
+						dmutex.Unlock()
+						reading_links = 0
+					}
+			    }
+
+				if  key != "" && key != "link" {
 					// store data
 					dmutex.Lock()
 					(*pdata)[i].used = true
@@ -375,4 +426,146 @@ func get_used_elements() (uint64) {
 	dmutex.Unlock()
 	// return free data space
 	return free
+}
+
+
+// link functions ==============================================================
+func get_data_key_compare(key string) (string, uint64) {
+	// don't use regex to compare, using normal string compare to find exact match
+	var i uint64
+
+	skey := strings.Trim(key, "\n")
+
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			if skey == (*pdata)[i].key {
+				dmutex.Unlock()
+				nvalue := strings.Trim((*pdata)[i].value, "'\n")
+				return nvalue, i
+			}
+		}
+	}
+	dmutex.Unlock()
+	// no matching key found, return empty string
+	return "", i
+}
+
+func set_link(key string, keylink string) int {
+	// set link between key and keylink data entries
+
+	var k uint64
+	var l uint64
+	var retstr string
+
+	retstr, k = get_data_key_compare(key)
+	if (retstr == ""){
+		// key not found
+		// return error code
+		dmutex.Unlock()
+		return 1
+	}
+
+	retstr, l = get_data_key_compare(keylink)
+	if (retstr == ""){
+		// key not found
+		// return error code
+		dmutex.Unlock()
+		return 1
+	}
+
+	// both key and keylink are found
+	// set the link
+	dmutex.Lock()
+	(*pdata)[k].links = append((*pdata)[k].links, l)
+	dmutex.Unlock()
+
+	return 0
+}
+
+func remove_element_by_index[T any](slice []T, index uint64 ) []T {
+	return append(slice[:index], slice[index+1:]...)
+}
+
+func remove_link(key string, keylink string) int {
+	// set link between key and keylink data entries
+
+	var k uint64
+	var l uint64
+	var i uint64
+	var retstr string
+
+	retstr, k = get_data_key_compare(key)
+	if (retstr == ""){
+		// key not found
+		// return error code
+		return 1
+	}
+
+	retstr, l = get_data_key_compare(keylink)
+	if (retstr == ""){
+		// keylink not found
+		// return error code
+		return 1
+	}
+
+	dmutex.Lock()
+
+	// both key and keylink are found
+	// search the keylink string index in links
+	for i = 0; i <  uint64 (len ((*pdata)[k].links)); i++  {
+		if (*pdata)[k].links[i] == l {
+			// found matching index in the keys link list
+			// rermove it
+			(*pdata)[k].links = remove_element_by_index((*pdata)[k].links, i)
+			dmutex.Unlock()
+            return 0
+		}
+	}
+
+	// link not found
+	dmutex.Unlock()
+	return 1
+}
+
+func get_number_of_links(key string) (uint64, string) {
+	var linkslen uint64
+	var k uint64
+	var retstr string
+
+	retstr, k = get_data_key_compare(key)
+	if (retstr == ""){
+		// key not found
+		// return error code
+		return 1, ""
+	}
+
+	linkslen = uint64 (len ((*pdata)[k].links))
+
+	return linkslen, retstr
+}
+
+func get_link(key string, link_index uint64) string {
+	var linkslen uint64
+	var k uint64
+	var l uint64
+	var retstr string
+
+	retstr, k = get_data_key_compare(key)
+	if (retstr == ""){
+		// key not found
+		// return error code
+		return ""
+	}
+
+	linkslen = uint64 (len ((*pdata)[k].links))
+    if link_index < 0 || link_index >= linkslen {
+		// error link index out of range
+		return ""
+	}
+
+	l = (*pdata)[k].links[link_index]
+	retstr = (*pdata)[l].key
+
+	return retstr
 }

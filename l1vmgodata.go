@@ -50,6 +50,10 @@ const (
 	LOAD_DATA_JSON 		 = "json-import"
 	ERASE_DATA       	 = "erase all"
 	GET_USED_ELEMENTS 	 = "usage"
+	SET_LINK             = "set-link"
+	REMOVE_LINK          = "rem-link"
+	GET_LINKS_NUMBER     = "get-links-number"
+	GET_LINK_NAME		 = "get-link-name"
 	EXIT                 = "exit"
 )
 
@@ -57,6 +61,7 @@ type data struct {
 	used  bool
 	key   string
 	value string
+	links [] uint64
 }
 
 var maxdata uint64 = 10000 // max data number
@@ -146,6 +151,9 @@ func process_client(connection net.Conn) {
 	var used_space uint64 = 0
 	var used_space_percent float64 = 0.0
 	var info string = ""
+	var ret uint64
+	var retstring string = ""
+	var link uint64 = 0
 
 	var match bool
 
@@ -429,6 +437,140 @@ func process_client(connection net.Conn) {
 				fmt.Println("process_client: Error sending space usage.", err.Error())
 			}
 		}
+
+		regexp_set_link := regexp.MustCompile(SET_LINK)
+		match = regexp_set_link.Match([]byte(buffer[:mLen]))
+		if match {
+			key =  split_key(string(buffer[:mLen]))
+			if key == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error set link:", err.Error())
+				}
+			}
+
+			value = split_value(string(buffer[:mLen]))
+			if value == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error set link:", err.Error())
+				}
+			}
+
+			if set_link(key, value) != 0 {
+				// error
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error set link:", err.Error())
+				}
+			} else {
+				_, err = connection.Write([]byte("OK\n"))
+				if err != nil {
+					fmt.Println("process_client: Error set link:", err.Error())
+				}
+			}
+		}
+
+		regexp_remove_link := regexp.MustCompile(REMOVE_LINK)
+		match = regexp_remove_link.Match([]byte(buffer[:mLen]))
+		if match {
+			key =  split_key(string(buffer[:mLen]))
+			if key == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error remove link:", err.Error())
+				}
+			}
+
+			value = split_value(string(buffer[:mLen]))
+			if value == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error remove link:", err.Error())
+				}
+			}
+
+			if remove_link(key, value) != 0 {
+				// error
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error remove link:", err.Error())
+				}
+			} else {
+				_, err = connection.Write([]byte("OK\n"))
+				if err != nil {
+					fmt.Println("process_client: Error remove link:", err.Error())
+				}
+			}
+		}
+
+		regexp_get_number_of_links := regexp.MustCompile(GET_LINKS_NUMBER)
+		match = regexp_get_number_of_links.Match([]byte(buffer[:mLen]))
+		if match {
+			key =  split_key(string(buffer[:mLen]))
+			if key == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			}
+
+			ret, retstring = get_number_of_links(key)
+			if retstring == "" {
+				// key not found
+				// error
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			} else {
+				// all ok write number of links
+				info = strconv.FormatUint(ret, 10) + "\n"
+				_, err = connection.Write([]byte(info))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:.", err.Error())
+			    }
+			}
+		}
+
+		regexp_get_link := regexp.MustCompile(GET_LINK_NAME)
+		match = regexp_get_link.Match([]byte(buffer[:mLen]))
+		if match {
+			key =  split_key(string(buffer[:mLen]))
+			if key == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			}
+
+			value = split_value(string(buffer[:mLen]))
+			if value == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error remove link:", err.Error())
+				}
+			}
+
+			link, _ = strconv.ParseUint(value, 10, 64)
+
+			retstring = get_link(key, link)
+			if retstring == "" {
+				// key not found
+				// error
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			} else {
+				// all ok write link name
+				info = retstring + "\n"
+				_, err = connection.Write([]byte(info))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:.", err.Error())
+			    }
+			}
+		}
 	}
 
 	connection.Close()
@@ -436,7 +578,7 @@ func process_client(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.8.1 ...")
+	fmt.Println("l1vmgodata start 0.9.0 ...")
 
 	if len(os.Args) == 4 || len(os.Args) == 5 {
 		server_host = os.Args[1]
