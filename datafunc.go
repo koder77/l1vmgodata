@@ -52,11 +52,22 @@ func search_key(search_key string) (int, uint64) {
 
 func init_data() {
 	var i uint64
+	var l uint64
+	var linkslen uint64
+
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
+
+		linkslen = uint64 (len ((*pdata)[i].links))
+		if linkslen > 0 {
+			// there are links set, remove all:
+			for l = 0; l < linkslen; l++ {
+				(*pdata)[i].links = remove_element_by_index((*pdata)[i].links, l)
+			}
+		}
 	}
 	dmutex.Unlock()
 	data_index = 0
