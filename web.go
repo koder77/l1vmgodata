@@ -25,12 +25,16 @@ import (
 	"flag"
     "log"
 	"net/http"
+	"strconv"
 )
 
 func parse_web(w http.ResponseWriter, command string, key string, value string) {
 	var key_ret string
 	var value_ret string
 	var used_elements uint64
+	var linkslen uint64
+	var retstr string
+	var linkindex uint64
 
 	switch command {
 		case STORE_DATA:
@@ -87,6 +91,38 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 		case GET_USED_ELEMENTS:
 			used_elements = get_used_elements()
 			fmt.Fprintf(w, "usage: %d of %d\n", used_elements, maxdata)
+
+	    case SET_LINK:
+			if (set_link(key, value) != 0){
+				fmt.Fprintf(w, "ERROR can't set link %s !\n", value)
+			} else {
+				fmt.Fprintf(w, "link set!\n")
+			}
+
+		case REMOVE_LINK:
+			if (remove_link(key, value) != 0){
+				fmt.Fprintf(w, "ERROR can't remove link %s !\n", value)
+			} else {
+				fmt.Fprintf(w, "link removed!\n")
+			}
+
+		case GET_LINKS_NUMBER:
+			linkslen, retstr = get_number_of_links(key)
+            if retstr == "" {
+				fmt.Fprintf(w, "ERROR can't get links number!\n")
+			} else {
+				fmt.Fprintf(w, "links: %d\n", linkslen)
+			}
+
+		case GET_LINK_NAME:
+            linkindex, _ = strconv.ParseUint (value, 10, 64)
+
+			retstr = get_link(key, linkindex)
+            if retstr == "" {
+				fmt.Fprintf(w, "ERROR can't get links name!\n")
+			} else {
+				fmt.Fprintf(w, "link name: %s\n", retstr)
+			}
 
 		default:
 			fmt.Fprintf(w, "ERROR! UNKNOWN COMMAND!")
