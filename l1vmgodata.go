@@ -69,6 +69,7 @@ var data_index uint64 = 0 // for loading multiple databases into one big databas
 var server_port string = "2000"
 var server_http_port string = ""
 var server_host = "localhost"
+var server net.Listener
 var pdata *[]data
 
 // ip addresses whitelist
@@ -115,6 +116,7 @@ func check_whitelist(ip string) bool {
 
 func run_server() {
 	var client_ip string
+
 	fmt.Println("run_server...")
 	if server_http_port != "off" {
 		go handle_http_request()
@@ -184,7 +186,11 @@ func process_client(connection net.Conn) {
 			_, err = connection.Write([]byte("OK\n"))
 
 			// cleanup
+			fmt.Println("cleaning up and exit!")
+			init_data()
 			pdata = nil
+			server.Close()
+
 			os.Exit (0)
 		}
 
@@ -213,6 +219,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// get data key
@@ -244,6 +251,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// get data value
@@ -275,6 +283,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// remove data, send value
@@ -306,6 +315,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// check save
@@ -332,6 +342,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// check load
@@ -358,6 +369,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// check save
@@ -384,6 +396,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error writing:", err.Error())
 				}
 			}
+			continue
 		}
 
 		// check load
@@ -410,6 +423,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error loading:", err.Error())
 				}
 			}
+			continue
 		}
 
 
@@ -436,6 +450,7 @@ func process_client(connection net.Conn) {
 			if err != nil {
 				fmt.Println("process_client: Error sending space usage.", err.Error())
 			}
+			continue
 		}
 
 		regexp_set_link := regexp.MustCompile(SET_LINK)
@@ -469,6 +484,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error set link:", err.Error())
 				}
 			}
+			continue
 		}
 
 		regexp_remove_link := regexp.MustCompile(REMOVE_LINK)
@@ -502,6 +518,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error remove link:", err.Error())
 				}
 			}
+			continue
 		}
 
 		regexp_get_number_of_links := regexp.MustCompile(GET_LINKS_NUMBER)
@@ -531,6 +548,7 @@ func process_client(connection net.Conn) {
 					fmt.Println("process_client: Error get number of links:.", err.Error())
 			    }
 			}
+			continue
 		}
 
 		regexp_get_link := regexp.MustCompile(GET_LINK_NAME)
@@ -571,7 +589,14 @@ func process_client(connection net.Conn) {
 			    }
 			}
 		}
+
+		// no matching command
+		_, err = connection.Write([]byte("ERROR! UNKNOWN COMMAND!\n"))
+		if err != nil {
+			fmt.Println("process_client: Error sending unknown command error:", err.Error())
+		}
 	}
+
 
 	connection.Close()
 }
