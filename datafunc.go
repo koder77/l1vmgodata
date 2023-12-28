@@ -239,7 +239,6 @@ func save_data(file_path string) int {
 					dmutex.Unlock()
 			    }
 			}
-            return 0
 		}
 	}
 	return 0
