@@ -209,7 +209,7 @@ func save_data(file_path string) int {
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
 			dmutex.Lock()
-			value_save := strings.Trim((*pdata)[i].value, "\n")
+			value_save := strings.Trim((*pdata)[i].value, "'\n")
 			_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
