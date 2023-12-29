@@ -502,7 +502,6 @@ func set_link(key string, keylink string) int {
 	if (retstr == ""){
 		// key not found
 		// return error code
-		dmutex.Unlock()
 		return 1
 	}
 
@@ -510,21 +509,21 @@ func set_link(key string, keylink string) int {
 	if (retstr == ""){
 		// key not found
 		// return error code
-		dmutex.Unlock()
 		return 1
 	}
 
 	// both key and keylink are found
 	// check if link was already set
-	for i = 0; i <  uint64 (len ((*pdata)[k].links)); i++ {
+	dmutex.Lock()
+	for i = 0; i < uint64 (len ((*pdata)[k].links)); i++ {
 		if (*pdata)[k].links[i] == l {
 			// error return, link was already set!
+			dmutex.Unlock()
 			return 1
 		}
 	}
 
 	// set the link
-	dmutex.Lock()
 	(*pdata)[k].links = append((*pdata)[k].links, l)
 	dmutex.Unlock()
 
