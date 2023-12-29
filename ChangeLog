@@ -1,5 +1,10 @@
+L1VMgodata - (0.9.0)
+    Added links for linking between keys.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Fri 29 Dec 2023 05:46 +0100
+
 L1VMgodata - (0.8.1)
-        Added trim for data return functions: '\n' in datafunc.go.
+    Added trim for data return functions: '\n' in datafunc.go.
 
 -- Stefan Pietzonke <jay-t@gmx.net> Thu 21 Dec 2023 10:49 +0100
 
