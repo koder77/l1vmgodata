@@ -170,6 +170,38 @@ func split_data_json(input string) (string, string) {
 	return inkey, invalue
 }
 
+func check_input(input string) int {
+	var i int = 0;
+	var search bool = true
+	var inplen int = 0
+	var colon bool = false
+	var single_quote = 0
+
+	inplen = len(input)
+	for search {
+		if input[i] == ':' {
+			colon = true
+		}
+
+		if input[i] == '\'' {
+			if colon != true {
+				// error no colon set before single quote!
+				return 1
+			}
+			single_quote++
+		}
+		i++
+		if i >= inplen {
+			search = false
+		}
+	}
+	if single_quote != 2 {
+		// error no two single quotes
+		return 1
+	}
+	return 0
+}
+
 func split_key(input string) string {
 	var i int = 0
 	var search bool = true
@@ -177,6 +209,10 @@ func split_key(input string) string {
 	var inkey string = ""
 	var inplen int = 0
 	inplen = len(input)
+	if check_input(input) == 1 {
+		// error
+		return ""
+	}
 	for search {
 		if input[i] == ':' && i < inplen {
 			// store chars until next space char
@@ -215,6 +251,10 @@ func split_value(input string) string {
 	var invalue string = ""
 	var inplen int = 0
 	inplen = len(input)
+	if check_input(input) == 1 {
+		// error
+		return ""
+	}
 	for search {
 		if input[i] == '\'' && i < inplen {
 			// store chars until next quote char
