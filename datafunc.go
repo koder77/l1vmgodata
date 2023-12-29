@@ -303,7 +303,7 @@ func load_data(file_path string) int {
 				// fmt.Println("read: " + line)
 				key, value = split_data(line)
 
-				fmt.Println("load: key: " + key)
+				//fmt.Println("load: key: " + key)
 
 				if  key != "" && key != "link" {
 					// store data
