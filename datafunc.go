@@ -495,6 +495,7 @@ func set_link(key string, keylink string) int {
 
 	var k uint64
 	var l uint64
+	var i uint64
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
@@ -514,6 +515,14 @@ func set_link(key string, keylink string) int {
 	}
 
 	// both key and keylink are found
+	// check if link was already set
+	for i = 0; i <  uint64 (len ((*pdata)[k].links)); i++ {
+		if (*pdata)[k].links[i] == l {
+			// error return, link was already set!
+			return 1
+		}
+	}
+
 	// set the link
 	dmutex.Lock()
 	(*pdata)[k].links = append((*pdata)[k].links, l)
