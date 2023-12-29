@@ -178,7 +178,7 @@ func split_key(input string) string {
 	var inplen int = 0
 	inplen = len(input)
 	for search {
-		if input[i] == ':' {
+		if input[i] == ':' && i < inplen {
 			// store chars until next space char
 			if i >= inplen {
 				copy = false
@@ -201,6 +201,9 @@ func split_key(input string) string {
 			}
 		}
 		i++
+		if i >= inplen {
+			search = false
+		}
 	}
 	return inkey
 }
@@ -213,7 +216,7 @@ func split_value(input string) string {
 	var inplen int = 0
 	inplen = len(input)
 	for search {
-		if input[i] == '\'' {
+		if input[i] == '\'' && i < inplen {
 			// store chars until next quote char
 			if i >= inplen {
 				copy = false
@@ -236,6 +239,9 @@ func split_value(input string) string {
 			}
 		}
 		i++
+		if i >= inplen {
+			search = false
+		}
 	}
 	return invalue
 }
