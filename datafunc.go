@@ -158,9 +158,12 @@ func get_data_value(value string) string {
 
 func remove_data(key string) string {
 	var i uint64
+	var j uint64
+	var l uint64
+	//var linkindex uint64
 	var match bool
 	var value string
-
+	var linkslen uint64 = 0
 	skey := strings.Trim(key, "\n")
 	// regexp := regexp.MustCompile(skey)
 
@@ -170,12 +173,31 @@ func remove_data(key string) string {
 			// match = regexp.Match([]byte((*pdata)[i].key))
 			match = (*pdata)[i].key == skey
 			if match {
+				fmt.Println ("remove data: found match...")
+				for j = 0; j < maxdata; j++ {
+					if (*pdata)[j].used {
+						linkslen = uint64 (len ((*pdata)[j].links))
+						if linkslen > 0 {
+							for l = 0; l < linkslen; l++ {
+								// try remove the data link, if possible
+								// linkindex = (*pdata)[j].links[l]
+								//if (*pdata)[linkindex].key == skey {
+									dmutex.Unlock()
+									fmt.Println("remove data: key: " + (*pdata)[j].key)
+									_ = remove_link((*pdata)[j].key, skey)
+									dmutex.Lock()
+								//}
+							}
+						}
+					}
+				}
 				value = (*pdata)[i].value
 				(*pdata)[i].used = false
 				(*pdata)[i].key = ""
 				(*pdata)[i].value = ""
-				dmutex.Unlock()
+
 				nvalue := strings.Trim(value, "'\n")
+				dmutex.Unlock()
 				return nvalue
 			}
 		}
@@ -251,7 +273,6 @@ func load_data(file_path string) int {
 	var value string
 	var l uint64 = 0
 	var linkslen uint64  = 0
-	var reading_links uint64 = 0
 	var link uint64 = 0
 
 	// load database file
@@ -281,24 +302,8 @@ func load_data(file_path string) int {
 			} else {
 				// fmt.Println("read: " + line)
 				key, value = split_data(line)
-				if key == "link" && reading_links == 0 {
-					// read number of links
-					reading_links = 1
-					linkslen, _  =  strconv.ParseUint (value, 10, 64)
-					continue
-				}
-				if key == "link" && reading_links == 1 {
-					// load links
-					if linkslen > 0 {
-						dmutex.Lock()
-						for l = 0; l < linkslen; l++  {
-							link, _ = strconv.ParseUint (value, 10, 64)
-							(*pdata)[i].links = append ((*pdata)[i].links, link)
-						}
-						dmutex.Unlock()
-						reading_links = 0
-					}
-			    }
+
+				fmt.Println("load: key: " + key)
 
 				if  key != "" && key != "link" {
 					// store data
@@ -307,8 +312,32 @@ func load_data(file_path string) int {
 					(*pdata)[i].key = key
 					(*pdata)[i].value = value
 					dmutex.Unlock()
-					i++
 				}
+
+				// get links number
+				scanner.Scan()
+				line := scanner.Text()
+				key, value = split_data(line)
+				linkslen, _  =  strconv.ParseUint (value, 10, 64)
+
+				//fmt.Printf ("load: links: %d\n", linkslen)
+
+				if linkslen > 0 {
+					// there are links, load them
+					for l = 0; l < linkslen; l++ {
+						scanner.Scan()
+						line := scanner.Text()
+						key, value = split_data(line)
+						link, _  =  strconv.ParseUint (value, 10, 64)
+
+						//fmt.Printf("load: link: %d\n", link)
+
+						dmutex.Lock()
+						(*pdata)[i].links = append ((*pdata)[i].links, link)
+						dmutex.Unlock()
+					}
+				}
+				i++
 			}
 		} else {
 			fmt.Println("Error reading database: out of memory: entries overflow!")
