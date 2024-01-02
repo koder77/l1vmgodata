@@ -170,12 +170,50 @@ func split_data_json(input string) (string, string) {
 	return inkey, invalue
 }
 
-func check_input(input string) int {
+func split_data_csv(input string) (string, string) {
+	var i int = 0
+	var inkey string = ""
+	var invalue string = ""
+	var inplen int = 0
+	var comma_pos int = 0
+	inplen = len(input)
+
+	// check for comma
+	for i = 0; i < inplen; i++ {
+		if input[i] == ',' {
+			comma_pos = i
+			break
+		}
+ 	}
+
+	if comma_pos == 0 {
+		inkey = ""
+		invalue = ""
+		return inkey, invalue
+	}
+
+	// get key before the comma
+	for i = 0; i < comma_pos; i++ {
+		if input[i] == ' ' {
+			inkey = inkey + string ('_')
+		} else {
+			inkey = inkey + string (input[i])
+		}
+	}
+
+	// get part after the comma to the end of line
+	for i = comma_pos + 1; i < inplen; i++ {
+		invalue = invalue + string (input[i])
+	}
+
+	return inkey, invalue
+}
+
+func check_input_key(input string) int {
 	var i int = 0;
 	var search bool = true
 	var inplen int = 0
 	var colon bool = false
-	var single_quote = 0
 
 	inplen = len(input)
 	for search {
@@ -183,11 +221,27 @@ func check_input(input string) int {
 			colon = true
 		}
 
+		i++
+		if i >= inplen {
+			search = false
+		}
+	}
+	if colon == false {
+		// error no two single quotes
+		return 1
+	}
+	return 0
+}
+
+func check_input_value(input string) int {
+	var i int = 0;
+	var search bool = true
+	var inplen int = 0
+	var single_quote = 0
+
+	inplen = len(input)
+	for search {
 		if input[i] == '\'' {
-			if colon != true {
-				// error no colon set before single quote!
-				return 1
-			}
 			single_quote++
 		}
 		i++
@@ -209,7 +263,7 @@ func split_key(input string) string {
 	var inkey string = ""
 	var inplen int = 0
 	inplen = len(input)
-	if check_input(input) == 1 {
+	if check_input_key(input) == 1 {
 		// error
 		return ""
 	}
@@ -251,7 +305,7 @@ func split_value(input string) string {
 	var invalue string = ""
 	var inplen int = 0
 	inplen = len(input)
-	if check_input(input) == 1 {
+	if check_input_value(input) == 1 {
 		// error
 		return ""
 	}
