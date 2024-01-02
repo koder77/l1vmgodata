@@ -451,6 +451,43 @@ func load_data_json(file_path string) int {
 	return 0
 }
 
+// export CSV
+func save_data_csv(file_path string) int {
+	var i uint64 = 0
+	// create file
+	f, err := os.Create(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer f.Close()
+
+	// write header
+	_, err = f.WriteString("key, value\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		dmutex.Unlock()
+		return 1
+	}
+
+	// write data loop
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			dmutex.Lock()
+			value_save := strings.Trim((*pdata)[i].value, "'\n")
+			_, err = f.WriteString((*pdata)[i].key + ", " + value_save + "\n")
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				dmutex.Unlock()
+				return 1
+			}
+		}
+	}
+	return 0
+}
+
+
 // get info about data base usage, return used space
 func get_used_elements() (uint64) {
 	var i uint64

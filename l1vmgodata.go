@@ -48,6 +48,7 @@ const (
 	LOAD_DATA       	 = "load"
 	SAVE_DATA_JSON   	 = "json-export"
 	LOAD_DATA_JSON 		 = "json-import"
+	SAVE_DATA_CSV		 = "csv-export"
 	ERASE_DATA       	 = "erase all"
 	GET_USED_ELEMENTS 	 = "usage"
 	SET_LINK             = "set-link"
@@ -426,6 +427,32 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
+		// check save CSV
+		regexp_save_csv := regexp.MustCompile(SAVE_DATA_CSV)
+		match = regexp_save_csv.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if save_data_csv(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+			}
+			continue
+		}
 
 		// check erase all data
 		regexp_erase_all := regexp.MustCompile(ERASE_DATA)
