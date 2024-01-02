@@ -72,14 +72,14 @@ foobar
 Save example:
 
 ```
-save :save 'test.db'
+save 'test.db'
 OK
 ```
 
 Load:
 
 ```
-load :load 'test.db'
+load 'test.db'
 OK
 ```
 
@@ -93,13 +93,13 @@ OK
 Export data base into ".json" file:
 
 ```
-json-export :json 'test.json'
+json-export 'test.json'
 ```
 
 Import data base from ".json" file:
 
 ```
-json-import :json 'test.json'
+json-import 'test.json'
 ```
 
 
