@@ -44,6 +44,7 @@ save
 load
 json-export
 json-import
+csv-export
 erase all
 usage
 exit
