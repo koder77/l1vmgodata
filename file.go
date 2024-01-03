@@ -124,10 +124,10 @@ func load_data(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				// fmt.Println("read: " + line)
+				//fmt.Println("load_data: '" + line + "'\n")
 				key, value = split_data(line)
 
-				//fmt.Println("load: key: " + key)
+				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
 
 				if  key != "" && key != "link" {
 					// store data
@@ -138,27 +138,30 @@ func load_data(file_path string) int {
 					dmutex.Unlock()
 				}
 
-				// get links number
-				scanner.Scan()
-				line := scanner.Text()
-				key, value = split_data(line)
-				linkslen, _  =  strconv.ParseUint (value, 10, 64)
+				if key == "link" {
+					// get links number
 
-				//fmt.Printf ("load: links: %d\n", linkslen)
+					linkslen, _  =  strconv.ParseUint (value, 10, 64)
 
-				if linkslen > 0 {
-					// there are links, load them
-					for l = 0; l < linkslen; l++ {
-						scanner.Scan()
-						line := scanner.Text()
-						key, value = split_data(line)
-						link, _  =  strconv.ParseUint (value, 10, 64)
+					//fmt.Printf ("load: links: %d\n", linkslen)
 
-						//fmt.Printf("load: link: %d\n", link)
+					if linkslen > 0 {
+						// there are links, load them
+						for l = 0; l < linkslen; l++ {
+							scanner.Scan()
+							line := scanner.Text()
+							key, value = split_data(line)
+							link, _  =  strconv.ParseUint (value, 10, 64)
 
-						dmutex.Lock()
-						(*pdata)[i].links = append ((*pdata)[i].links, link)
-						dmutex.Unlock()
+							//fmt.Printf("load: link: %d\n", link)
+
+							dmutex.Lock()
+							(*pdata)[i].links = append ((*pdata)[i].links, link)
+							dmutex.Unlock()
+
+							// DEBUG
+							fmt.Println ("got link\n")
+						}
 					}
 				}
 				i++
@@ -171,6 +174,7 @@ func load_data(file_path string) int {
 	data_index = i
 	return 0
 }
+
 
 // export to .json data file
 func save_data_json(file_path string) int {
