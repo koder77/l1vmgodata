@@ -46,6 +46,10 @@ func split_data(input string) (string, string) {
 	var invalue string = ""
 	var inplen int = 0
 	inplen = len(input)
+	if inplen <= 1 {
+		return "", ""
+	}
+
 	for search {
 		if input[i] == ':' {
 			// store chars until next space char
