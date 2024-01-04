@@ -46,6 +46,7 @@ json-export
 json-import
 csv-export
 csv-import
+csv-table-export
 erase all
 usage
 exit
@@ -159,3 +160,34 @@ You can store and load data in the web browser with the commands like above!
 The save and load functions use the value entry as the filename!
 
 exit command to quit the database
+
+NEW
+===
+CSV table export. The data must be stored like this (chem.db):
+
+```
+l1vmgodata database
+:1-1-substance "water"
+:link '0'
+:1-2-chemical "H2O"
+:link '0'
+:1-3-boiling "100"
+:link '0'
+:2-1-substance "iron"
+:link '0'
+:2-2-chemical "Fe"
+:link '0'
+:2-3-boiling "3070"
+:link '0'
+
+```
+So here 1-1-substance "water" is index 1 key 1.
+And the 1-3-boiling is the last key of index 1.
+
+The CSV table looks like this:
+
+```
+substance, chemical, boiling
+water, H2O, 100
+iron, Fe, 3070
+```

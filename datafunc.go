@@ -24,8 +24,8 @@ package main
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
+	"strconv"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -112,12 +112,10 @@ func get_data_key(key string) string {
 	var match bool
 
 	skey := strings.Trim(key, "\n")
-	regexp := regexp.MustCompile(skey)
-
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match = regexp.Match([]byte((*pdata)[i].key))
+			match = strings.Contains((*pdata)[i].key, skey)
 			if match {
 				dmutex.Unlock()
 				nvalue := strings.Trim((*pdata)[i].value, "'\n")
@@ -134,13 +132,12 @@ func get_data_value(value string) string {
 	var i uint64
 	var match bool
 
-	// svalue := strings.Trim(value, "\n")
-	regexp := regexp.MustCompile(value)
+	svalue := strings.Trim(value, "\n")
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match = regexp.Match([]byte((*pdata)[i].value))
+			match = strings.Contains((*pdata)[i].value, svalue)
 			if match {
 				dmutex.Unlock()
 				nvalue := strings.Trim((*pdata)[i].key, "'\n")
@@ -368,4 +365,41 @@ func get_link(key string, link_index uint64) string {
 	retstr = (*pdata)[l].key
 
 	return retstr
+}
+
+func get_table_key (index uint64, key uint64) (string, string) {
+	var i uint64
+	var search_index string = ""
+	var search_index_len uint64 = 0
+	var keystr string = ""
+	var start uint64 = 0
+	var end uint64 = 0
+	var match bool
+
+	search_index = strconv.FormatUint(index, 10)
+	search_index = search_index + "-"
+	search_index = search_index + strconv.FormatUint(key, 10)
+	search_index = search_index + "-"
+
+	search_index_len = uint64 (len (search_index))
+
+	// DEBUG
+	// fmt.Println ("get_table_key: " + search_index)
+
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			match = strings.Contains((*pdata)[i].key, search_index)
+			if match {
+				// fmt.Println ("get_table_key: found match!")
+				start = uint64 (search_index_len)
+				end = uint64 (len ((*pdata)[i].key))
+				keystr = (*pdata)[i].key[start:end]
+				dmutex.Unlock()
+				return keystr, (*pdata)[i].value
+			}
+		}
+	}
+	dmutex.Unlock()
+	return "", ""
 }

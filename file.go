@@ -124,10 +124,10 @@ func load_data(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				// fmt.Println("read: " + line)
+				//fmt.Println("load_data: '" + line + "'\n")
 				key, value = split_data(line)
 
-				//fmt.Println("load: key: " + key)
+				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
 
 				if  key != "" && key != "link" {
 					// store data
@@ -138,27 +138,30 @@ func load_data(file_path string) int {
 					dmutex.Unlock()
 				}
 
-				// get links number
-				scanner.Scan()
-				line := scanner.Text()
-				key, value = split_data(line)
-				linkslen, _  =  strconv.ParseUint (value, 10, 64)
+				if key == "link" {
+					// get links number
 
-				//fmt.Printf ("load: links: %d\n", linkslen)
+					linkslen, _  =  strconv.ParseUint (value, 10, 64)
 
-				if linkslen > 0 {
-					// there are links, load them
-					for l = 0; l < linkslen; l++ {
-						scanner.Scan()
-						line := scanner.Text()
-						key, value = split_data(line)
-						link, _  =  strconv.ParseUint (value, 10, 64)
+					//fmt.Printf ("load: links: %d\n", linkslen)
 
-						//fmt.Printf("load: link: %d\n", link)
+					if linkslen > 0 {
+						// there are links, load them
+						for l = 0; l < linkslen; l++ {
+							scanner.Scan()
+							line := scanner.Text()
+							key, value = split_data(line)
+							link, _  =  strconv.ParseUint (value, 10, 64)
 
-						dmutex.Lock()
-						(*pdata)[i].links = append ((*pdata)[i].links, link)
-						dmutex.Unlock()
+							//fmt.Printf("load: link: %d\n", link)
+
+							dmutex.Lock()
+							(*pdata)[i].links = append ((*pdata)[i].links, link)
+							dmutex.Unlock()
+
+							// DEBUG
+							fmt.Println ("got link\n")
+						}
 					}
 				}
 				i++
@@ -355,4 +358,113 @@ func load_data_csv(file_path string) int {
 	}
 	data_index = i
 	return 0
+}
+
+// export CSV table
+func save_data_table_csv(file_path string) int {
+	// save CSV table in the format of:
+	// :1-1-substance "water"
+	// :link '0'
+	// :1-2-chemical "H2O"
+	// :link '0'
+	// :1-3-boiling "100"
+	// :link '0'
+	// :2-1-substance "iron"
+	// :link '0'
+	// :2-2-chemical "Fe"
+	// :link '0'
+	// :2-3-boiling "3070"
+	// :link '0'
+	//
+	// is saved as:
+	// substance, chemical, boiling
+	// water, H2O, 100
+	// iron, Fe, 3070
+
+	var key uint64 = 1
+	var keymax uint64 = 0
+	var index uint64 = 1
+	var keystr string = ""
+	var valuestr string = ""
+	var search bool = true
+	var save bool = true
+	// create file
+	f, err := os.Create(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer f.Close()
+
+	// get start key
+	for search {
+		keystr, valuestr = get_table_key (index, key)
+
+		// DEBUG
+		//fmt.Printf("save tavble csv: index: %d, key: %d\n", index, key )
+		//fmt.Println("save table csv: keystr: '" + keystr + "' valuestr: '" + valuestr + "’")
+
+		if keystr != "" {
+            if key > 1 {
+				_, err = f.WriteString(", ")
+				if err != nil {
+					fmt.Println("Error writing database file:", err.Error())
+					return 1
+				}
+			}
+
+			_, err = f.WriteString(keystr)
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				return 1
+			}
+			key = key + 1
+		} else {
+			search = false
+		}
+	}
+	_, err = f.WriteString("\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
+
+	keymax = key
+
+	index = 1
+	for save {
+		for key = 1; key <= keymax; key++ {
+			keystr, valuestr = get_table_key (index, key)
+			if keystr != "" {
+				if key > 1 {
+					_, err = f.WriteString(", ")
+					if err != nil {
+						fmt.Println("Error writing database file:", err.Error())
+						return 1
+					}
+				}
+
+				_, err = f.WriteString(valuestr)
+				if err != nil {
+					fmt.Println("Error writing database file:", err.Error())
+					return 1
+				}
+			} else {
+				if key == 1 {
+					// no new data entry, exit save loop!
+					save = false
+				}
+			}
+		}
+		_, err = f.WriteString("\n")
+		if err != nil {
+			fmt.Println("Error writing database file:", err.Error())
+			return 1
+		}
+
+		index++
+	}
+
+	return (0)
 }
