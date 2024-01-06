@@ -194,4 +194,4 @@ iron, Fe, 3070
 ```
 
 <b>CSV table import.</b>
-Now you can import CSV tables also. The entries are named like in a CSV table export. See above.#
+Now you can import CSV tables also. The entries are named like in a CSV table export. See above. 
