@@ -180,6 +180,7 @@ func split_data_csv(input string) (string, string) {
 	var invalue string = ""
 	var inplen int = 0
 	var comma_pos int = 0
+	var got_char bool = false
 	inplen = len(input)
 
 	// check for comma
@@ -199,9 +200,12 @@ func split_data_csv(input string) (string, string) {
 	// get key before the comma
 	for i = 0; i < comma_pos; i++ {
 		if input[i] == ' ' {
-			inkey = inkey + string ('_')
+			if got_char == true {
+				inkey = inkey + string (input[i])
+			}
 		} else {
 			inkey = inkey + string (input[i])
+			got_char = true
 		}
 	}
 
@@ -219,7 +223,7 @@ func split_data_csv_table(input string, start int) (string, int, int)  {
 	var value string = ""
 	var inplen int = 0
 	var comma_pos int = 0
-
+	var got_char bool = false
 	inplen = len(input)
 
 	if start == inplen {
@@ -239,16 +243,26 @@ func split_data_csv_table(input string, start int) (string, int, int)  {
 	value = ""
 	if comma_pos != 0 {
 		for v = start; v < comma_pos; v++ {
-			if input[v] != ' ' {
+			if input[v] == ' ' {
+				if got_char == true {
+					value = value + string(input[v])
+				}
+			} else {
 				value = value + string(input[v])
+				got_char = true
 			}
 		}
 		return value, comma_pos, comma_pos + 1
 	} else {
 		if i == inplen {
 			for v = start; v < inplen; v++ {
-				if input[v] != ' ' {
+				if input[v] == ' ' {
+					if got_char == true {
+						value = value + string(input[v])
+					}
+				} else {
 					value = value + string(input[v])
+					got_char = true
 				}
 			}
 			return value, comma_pos, inplen
