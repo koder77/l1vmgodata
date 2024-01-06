@@ -213,6 +213,51 @@ func split_data_csv(input string) (string, string) {
 	return inkey, invalue
 }
 
+func split_data_csv_table(input string, start int) (string, int, int)  {
+	var i int = 0
+	var v int = 0
+	var value string = ""
+	var inplen int = 0
+	var comma_pos int = 0
+
+	inplen = len(input)
+
+	if start == inplen {
+		return "", 0, 0
+	}
+
+	// check for comma
+	comma_pos = 0
+	for i = start; i < inplen; i++ {
+		if input[i] == ',' {
+			comma_pos = i
+			//start = comma_pos + 1  // for next comma search start
+			break
+		}
+	}
+
+	value = ""
+	if comma_pos != 0 {
+		for v = start; v < comma_pos; v++ {
+			if input[v] != ' ' {
+				value = value + string(input[v])
+			}
+		}
+		return value, comma_pos, comma_pos + 1
+	} else {
+		if i == inplen {
+			for v = start; v < inplen; v++ {
+				if input[v] != ' ' {
+					value = value + string(input[v])
+				}
+			}
+			return value, comma_pos, inplen
+		} else {
+			return "", 0, 0
+		}
+	}
+}
+
 func check_input_key(input string) int {
 	var i int = 0;
 	var search bool = true

@@ -47,6 +47,7 @@ json-import
 csv-export
 csv-import
 csv-table-export
+csv-table-import
 erase all
 usage
 exit
@@ -191,3 +192,6 @@ substance, chemical, boiling
 water, H2O, 100
 iron, Fe, 3070
 ```
+
+<b>CSV table import.</b>
+Now you can import CSV tables also. The entries are named like in a CSV table export. See above.#

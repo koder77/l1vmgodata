@@ -355,7 +355,11 @@ func load_data_csv(file_path string) int {
 			(*pdata)[i].key = key
 			(*pdata)[i].value = value
 			dmutex.Unlock()
+		} else {
+			fmt.Println("Error reading database: out of memory: entries overflow!")
+			return 1
 		}
+
 	}
 	data_index = i
 	return 0
@@ -467,5 +471,103 @@ func save_data_table_csv(file_path string) int {
 		index++
 	}
 
-	return (0)
+	return 0
+}
+
+// import CSV table
+func load_data_table_csv(file_path string) int {
+	var key uint64 = 1
+	var index uint64 = 1
+	var keyfullstr string = ""
+	var indexstr string = ""
+	var keystr string = ""
+	var keys_headerstr string = ""
+	var key_headerstr string = ""
+	var valuestr string = ""
+	var key_line = true
+	var i uint64
+	var value_start int = 0
+	var value_next int = 0
+	//var value_comma_pos int
+	var header_start int = 0
+	var header_next int = 0
+	//var header_comma_pos int
+	var do_split bool = true
+
+	// load database file
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + " " + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer file.Close()
+
+	// set i to data_index, so we can load more than one database. And don't start on zero index again!
+	i = data_index
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if key_line {
+			// get key names
+			key_line = false
+			keys_headerstr = line
+
+			//fmt.Println("csv table import: key header: " + keys_headerstr)
+		} else {
+			key = 1
+			do_split = true
+			for do_split {
+				key_headerstr, _, header_next = split_data_csv_table (keys_headerstr, header_start)
+
+				//fmt.Println("csv table import: key: " + key_headerstr)
+
+				if key_headerstr == "" {
+					// end of header, reset
+					header_start = 0
+					value_start = 0
+					do_split = false
+					continue
+				}
+
+				indexstr = strconv.FormatUint(index, 10)
+				keystr = strconv.FormatUint(key, 10)
+				keyfullstr = indexstr + "-" + keystr + "-" + key_headerstr
+				//fmt.Println("csv table import: key full: " + keyfullstr)
+
+				valuestr, _, value_next = split_data_csv_table (line, value_start)
+				if valuestr == "" {
+					// end of header, reset
+					value_start = 0
+					do_split = false
+					continue
+				}
+
+				//fmt.Println("csv table import: value: " + valuestr)
+
+				if (i < maxdata) {
+					dmutex.Lock()
+					(*pdata)[i].used = true
+					(*pdata)[i].key = keyfullstr
+					(*pdata)[i].value = valuestr
+					data_index = i
+					i++
+					dmutex.Unlock()
+				} else {
+					fmt.Println("Error reading database: out of memory: entries overflow!")
+					return 1
+				}
+
+				// set next data position
+				header_start = header_next
+				value_start = value_next
+
+				key++
+			}
+			index++
+		}
+	}
+	return 0
 }

@@ -51,6 +51,7 @@ const (
 	SAVE_DATA_CSV		 = "csv-export"
 	LOAD_DATA_CSV        = "csv-import"
 	SAVE_DATA_TABLE_CSV  = "csv-table-export"
+	LOAD_DATA_TABLE_CSV  = "csv-table-import"
 	ERASE_DATA       	 = "erase all"
 	GET_USED_ELEMENTS 	 = "usage"
 	SET_LINK             = "set-link"
@@ -483,7 +484,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		// check save CSV
+		// check save table CSV
 		regexp_save_table_csv := regexp.MustCompile(SAVE_DATA_TABLE_CSV)
 		match = regexp_save_table_csv.Match([]byte(buffer[:mLen]))
 		if match {
@@ -491,6 +492,33 @@ func process_client(connection net.Conn) {
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
 				if save_data_table_csv(value) != 0 {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+			}
+			continue
+		}
+
+		// check load table CSV
+		regexp_load_table_csv := regexp.MustCompile(LOAD_DATA_TABLE_CSV)
+		match = regexp_load_table_csv.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching path name
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				if load_data_table_csv(value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -519,6 +547,7 @@ func process_client(connection net.Conn) {
 			if err != nil {
 				fmt.Println("process_client: Error writing:", err.Error())
 			}
+			continue
 		}
 
 		// check get free elements
