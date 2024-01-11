@@ -1,4 +1,4 @@
-L1VMgodata 0.9.0
+L1VMgodata 0.9.1
 ================
 This is my first go project.
 This database is written for data exchange between programs.
@@ -10,6 +10,8 @@ NEW: now single quotes: ' are used for data!
 NEW: added Json import!
 NEW: now you have to set two ports. The first one is for direct access with a program like nc or other programs.
 The second is for the new web browser formular to save/load data.
+
+NEW: in the web form the form is always visible. also after commands are executed.
 
 You can connect via:
 

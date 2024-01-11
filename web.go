@@ -28,6 +28,33 @@ import (
 	"strconv"
 )
 
+func send_form_head(w http.ResponseWriter) {
+	fmt.Fprintf(w, "<!DOCTYPE html>")
+    fmt.Fprintf(w, "<html>")
+    fmt.Fprintf(w, "<head>")
+	fmt.Fprintf(w, "<meta charset=\"UTF-8\" />")
+	fmt.Fprintf(w, "<title>L1VMgodata - web</title>")
+	fmt.Fprintf(w, "</head>")
+	fmt.Fprintf(w, "<body>")
+	fmt.Fprintf(w, "<div>")
+	fmt.Fprintf(w, "<h2>L1VMgodata - web</h2>")
+	fmt.Fprintf(w, "<br>")
+    fmt.Fprintf(w, "<form method=\"POST\" action=\"/\">")
+    fmt.Fprintf(w, "<label>command</label><input name=\"command\" type=\"text\" value=\"\"/>&nbsp;")
+    fmt.Fprintf(w,"<label>key</label><input name=\"key\" type=\"text\" value=\"\"/>&nbsp;")
+    fmt.Fprintf(w, "<label>value</label><input name=\"value\" type=\"text\" value=\"\"/>&nbsp;")
+    fmt.Fprintf(w, "<input type=\"submit\" value=\"submit\"/>")
+	fmt.Fprintf(w, "</form>")
+	fmt.Fprintf(w, "<br>")
+	fmt.Fprintf(w, "<br>")
+}
+
+func send_form_end(w http.ResponseWriter) {
+	fmt.Fprintf(w, "</div>")
+	fmt.Fprintf(w, "</body>")
+	fmt.Fprintf(w, "</html>")
+}
+
 func parse_web(w http.ResponseWriter, command string, key string, value string) {
 	var key_ret string
 	var value_ret string
@@ -38,75 +65,125 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 
 	switch command {
 		case STORE_DATA:
+			send_form_head(w)
+
 			if store_data(key, value) != 0 {
 				fmt.Fprintf(w, "ERROR can't store data!\n")
 			} else {
 				fmt.Fprintf(w, "data stored!\n");
 			}
 
+			send_form_end(w)
+
 		case GET_DATA_KEY:
+		    send_form_head(w)
+
 			value_ret = get_data_key(key)
 			fmt.Fprintf(w, "key: %s, value: %s\n", key, value_ret)
 
+		    send_form_end(w)
+
 		case GET_DATA_VALUE:
+			send_form_head(w)
+
 			key_ret = get_data_value(value)
 			fmt.Fprintf(w, "key: %s, value: %s\n", key_ret, value)
 
+		    send_form_end(w)
+
 		case REMOVE_DATA:
+			send_form_head(w)
+
 			value_ret = remove_data (key)
 			fmt.Fprintf(w, "%s\n", value_ret)
 
+		    send_form_end(w)
+
 		case SAVE_DATA:
+			send_form_head(w)
+
 			if save_data (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't save database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "database %s saved!\n", value)
 			}
 
+		    send_form_end(w)
+
 		case LOAD_DATA:
+		    send_form_head(w)
+
 			if load_data (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't load database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "database %s loaded!\n", value)
 			}
 
+		    send_form_end(w)
+
 		case SAVE_DATA_JSON:
+			send_form_head(w)
+
 			if save_data_json (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't save JSON database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "JSON database %s saved!\n", value)
 			}
 
+		    send_form_end(w)
+
 		case LOAD_DATA_JSON:
+			send_form_head(w)
+
 			if load_data_json (value) != 0 {
 				fmt.Fprintf(w, "ERROR can't load JSON database %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "JSON database %s loaded!\n", value)
 			}
 
+		    send_form_end(w)
+
 		case ERASE_DATA:
+			send_form_head(w)
+
 			init_data()
 			fmt.Fprintf(w, "ALL DATA ERASED!\n");
 
+		    send_form_end(w)
+
 		case GET_USED_ELEMENTS:
+			send_form_head(w)
+
 			used_elements = get_used_elements()
 			fmt.Fprintf(w, "usage: %d of %d\n", used_elements, maxdata)
 
+		    send_form_end(w)
+
 	    case SET_LINK:
+		     send_form_head(w)
+
 			if (set_link(key, value) != 0){
 				fmt.Fprintf(w, "ERROR can't set link %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "link set!\n")
 			}
 
+		    send_form_end(w)
+
 		case REMOVE_LINK:
+			send_form_head(w)
+
 			if (remove_link(key, value) != 0){
 				fmt.Fprintf(w, "ERROR can't remove link %s !\n", value)
 			} else {
 				fmt.Fprintf(w, "link removed!\n")
 			}
 
+		    send_form_end(w)
+
 		case GET_LINKS_NUMBER:
+			send_form_head(w)
+
 			linkslen, retstr = get_number_of_links(key)
             if retstr == "" {
 				fmt.Fprintf(w, "ERROR can't get links number!\n")
@@ -114,7 +191,11 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 				fmt.Fprintf(w, "links: %d\n", linkslen)
 			}
 
+		    send_form_end(w)
+
 		case GET_LINK_NAME:
+            send_form_head(w)
+
             linkindex, _ = strconv.ParseUint (value, 10, 64)
 
 			retstr = get_link(key, linkindex)
@@ -124,8 +205,14 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 				fmt.Fprintf(w, "link name: %s\n", retstr)
 			}
 
+		    send_form_end(w)
+
 		default:
+			send_form_head(w)
+
 			fmt.Fprintf(w, "ERROR! UNKNOWN COMMAND!")
+
+		    send_form_end(w)
 	}
 }
 

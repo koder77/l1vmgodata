@@ -715,7 +715,7 @@ func process_client(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.0 ...")
+	fmt.Println("l1vmgodata start 0.9.1 ...")
 
 	if len(os.Args) == 4 || len(os.Args) == 5 {
 		server_host = os.Args[1]
