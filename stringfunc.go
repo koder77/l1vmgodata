@@ -42,6 +42,8 @@ func check_data(input string) int {
 	var i int = 0
 	var colon_pos int = 0
 	var chars_start = 0
+	var quote_start int = 0
+	var quote_end int = 0
 	var quote int = 0
 	var inplen int = 0
 	inplen = len(input)
@@ -63,6 +65,14 @@ func check_data(input string) int {
 			colon_pos = i
 		}
 		if input[i] == '\'' {
+			if quote_start != 0 {
+				if quote_end == 0 {
+					quote_end = i
+				}
+			}
+			if quote_start == 0 {
+				quote_start = i
+			}
 			quote = quote + 1
 		}
 	}
@@ -74,8 +84,14 @@ func check_data(input string) int {
 		return 1
 	}
 	if quote != 2 {
-		// no two quote found, error
+		// no two quotes found, error
 		fmt.Println("check_data: error no two quotes found!")
+		return 1
+	}
+
+	if colon_pos > quote_start || colon_pos > quote_end {
+		// colon not before quotes
+		fmt.Println("check_data: error colon after quotes!")
 		return 1
 	}
 
