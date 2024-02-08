@@ -39,37 +39,37 @@ const (
 
 // data base commands
 const (
-	STORE_DATA      	 = "store data"
-	GET_DATA_KEY    	 = "get key"
-	GET_DATA_VALUE 	     = "get value"
-	REMOVE_DATA      	 = "remove"
-	CLOSE_CONNECTION 	 = "close"
-	SAVE_DATA        	 = "save"
-	LOAD_DATA       	 = "load"
-	SAVE_DATA_JSON   	 = "json-export"
-	LOAD_DATA_JSON 		 = "json-import"
-	SAVE_DATA_CSV		 = "csv-export"
-	LOAD_DATA_CSV        = "csv-import"
-	SAVE_DATA_TABLE_CSV  = "csv-table-export"
-	LOAD_DATA_TABLE_CSV  = "csv-table-import"
-	ERASE_DATA       	 = "erase all"
-	GET_USED_ELEMENTS 	 = "usage"
-	SET_LINK             = "set-link"
-	REMOVE_LINK          = "rem-link"
-	GET_LINKS_NUMBER     = "get-links-number"
-	GET_LINK_NAME		 = "get-link-name"
-	EXIT                 = "exit"
+	STORE_DATA          = "store data"
+	GET_DATA_KEY        = "get key"
+	GET_DATA_VALUE      = "get value"
+	REMOVE_DATA         = "remove"
+	CLOSE_CONNECTION    = "close"
+	SAVE_DATA           = "save"
+	LOAD_DATA           = "load"
+	SAVE_DATA_JSON      = "json-export"
+	LOAD_DATA_JSON      = "json-import"
+	SAVE_DATA_CSV       = "csv-export"
+	LOAD_DATA_CSV       = "csv-import"
+	SAVE_DATA_TABLE_CSV = "csv-table-export"
+	LOAD_DATA_TABLE_CSV = "csv-table-import"
+	ERASE_DATA          = "erase all"
+	GET_USED_ELEMENTS   = "usage"
+	SET_LINK            = "set-link"
+	REMOVE_LINK         = "rem-link"
+	GET_LINKS_NUMBER    = "get-links-number"
+	GET_LINK_NAME       = "get-link-name"
+	EXIT                = "exit"
 )
 
 type data struct {
 	used  bool
 	key   string
 	value string
-	links [] uint64
+	links []uint64
 }
 
 var maxdata uint64 = 10000 // max data number
-var data_index uint64 = 0 // for loading multiple databases into one big database
+var data_index uint64 = 0  // for loading multiple databases into one big database
 var server_port string = "2000"
 var server_http_port string = ""
 var server_host = "localhost"
@@ -168,7 +168,7 @@ func process_client(connection net.Conn) {
 		if err != nil {
 			fmt.Println("process_client: Error reading:", err.Error())
 			// end for loop
-            run_loop = false
+			run_loop = false
 			continue
 		}
 		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
@@ -195,7 +195,7 @@ func process_client(connection net.Conn) {
 			pdata = nil
 			server.Close()
 
-			os.Exit (0)
+			os.Exit(0)
 		}
 
 		// store data
@@ -204,6 +204,13 @@ func process_client(connection net.Conn) {
 		if match {
 			// store key/value pair
 			// try to store data
+			if check_data(string(buffer[:mLen])) != 0 {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
 			key, value = split_data(string(buffer[:mLen]))
 			if key != "" {
 				if store_data(key, value) == 0 {
@@ -557,7 +564,7 @@ func process_client(connection net.Conn) {
 			used_space = get_used_elements()
 			used_space_percent = float64(100 * used_space / maxdata)
 
-            info = "USAGE " + strconv.FormatFloat(used_space_percent, 'f', 2, 64) + "% : " + strconv.FormatUint(used_space, 10) + " of " + strconv.FormatUint(maxdata, 10) + "\n"
+			info = "USAGE " + strconv.FormatFloat(used_space_percent, 'f', 2, 64) + "% : " + strconv.FormatUint(used_space, 10) + " of " + strconv.FormatUint(maxdata, 10) + "\n"
 			_, err = connection.Write([]byte(info))
 			if err != nil {
 				fmt.Println("process_client: Error sending space usage.", err.Error())
@@ -568,7 +575,7 @@ func process_client(connection net.Conn) {
 		regexp_set_link := regexp.MustCompile(SET_LINK)
 		match = regexp_set_link.Match([]byte(buffer[:mLen]))
 		if match {
-			key =  split_key(string(buffer[:mLen]))
+			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -602,7 +609,7 @@ func process_client(connection net.Conn) {
 		regexp_remove_link := regexp.MustCompile(REMOVE_LINK)
 		match = regexp_remove_link.Match([]byte(buffer[:mLen]))
 		if match {
-			key =  split_key(string(buffer[:mLen]))
+			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -636,7 +643,7 @@ func process_client(connection net.Conn) {
 		regexp_get_number_of_links := regexp.MustCompile(GET_LINKS_NUMBER)
 		match = regexp_get_number_of_links.Match([]byte(buffer[:mLen]))
 		if match {
-			key =  split_key(string(buffer[:mLen]))
+			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -658,7 +665,7 @@ func process_client(connection net.Conn) {
 				_, err = connection.Write([]byte(info))
 				if err != nil {
 					fmt.Println("process_client: Error get number of links:.", err.Error())
-			    }
+				}
 			}
 			continue
 		}
@@ -666,7 +673,7 @@ func process_client(connection net.Conn) {
 		regexp_get_link := regexp.MustCompile(GET_LINK_NAME)
 		match = regexp_get_link.Match([]byte(buffer[:mLen]))
 		if match {
-			key =  split_key(string(buffer[:mLen]))
+			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -698,7 +705,7 @@ func process_client(connection net.Conn) {
 				_, err = connection.Write([]byte(info))
 				if err != nil {
 					fmt.Println("process_client: Error get number of links:.", err.Error())
-			    }
+				}
 			}
 		}
 
@@ -708,7 +715,6 @@ func process_client(connection net.Conn) {
 			fmt.Println("process_client: Error sending unknown command error:", err.Error())
 		}
 	}
-
 
 	connection.Close()
 }

@@ -23,6 +23,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -35,6 +36,51 @@ func get_client_ip(address string) string {
 		i++
 	}
 	return ip_str
+}
+
+func check_data(input string) int {
+	var i int = 0
+	var colon_pos int = 0
+	var chars_start = 0
+	var quote int = 0
+	var inplen int = 0
+	inplen = len(input)
+
+	if inplen <= 1 {
+		// ERROR string to short
+		return 1
+	}
+
+	for i = 0; i < inplen; i++ {
+		if colon_pos != 0 {
+			if input[i] != ' ' {
+				if chars_start == 0 {
+					chars_start = i
+				}
+			}
+		}
+		if input[i] == ':' {
+			colon_pos = i
+		}
+		if input[i] == '\'' {
+			quote = quote + 1
+		}
+	}
+
+	// check if everything makes sense
+	if colon_pos == 0 {
+		// no colon found, error
+		fmt.Println("check_data: error no colon found!")
+		return 1
+	}
+	if quote != 2 {
+		// no two quote found, error
+		fmt.Println("check_data: error no two quotes found!")
+		return 1
+	}
+
+	// all ok!
+	return 0
 }
 
 func split_data(input string) (string, string) {
@@ -78,7 +124,7 @@ func split_data(input string) (string, string) {
 
 	// read chars into data
 	for j = i; j < inplen; j++ {
-		if input[i] != '"' {
+		if input[i] != '\'' {
 			invalue = invalue + string(input[i])
 		}
 		i++
@@ -189,7 +235,7 @@ func split_data_csv(input string) (string, string) {
 			comma_pos = i
 			break
 		}
- 	}
+	}
 
 	if comma_pos == 0 {
 		inkey = ""
@@ -201,23 +247,23 @@ func split_data_csv(input string) (string, string) {
 	for i = 0; i < comma_pos; i++ {
 		if input[i] == ' ' {
 			if got_char == true {
-				inkey = inkey + string (input[i])
+				inkey = inkey + string(input[i])
 			}
 		} else {
-			inkey = inkey + string (input[i])
+			inkey = inkey + string(input[i])
 			got_char = true
 		}
 	}
 
 	// get part after the comma to the end of line
 	for i = comma_pos + 1; i < inplen; i++ {
-		invalue = invalue + string (input[i])
+		invalue = invalue + string(input[i])
 	}
 
 	return inkey, invalue
 }
 
-func split_data_csv_table(input string, start int) (string, int, int)  {
+func split_data_csv_table(input string, start int) (string, int, int) {
 	var i int = 0
 	var v int = 0
 	var value string = ""
@@ -273,7 +319,7 @@ func split_data_csv_table(input string, start int) (string, int, int)  {
 }
 
 func check_input_key(input string) int {
-	var i int = 0;
+	var i int = 0
 	var search bool = true
 	var inplen int = 0
 	var colon bool = false
@@ -297,7 +343,7 @@ func check_input_key(input string) int {
 }
 
 func check_input_value(input string) int {
-	var i int = 0;
+	var i int = 0
 	var search bool = true
 	var inplen int = 0
 	var single_quote = 0

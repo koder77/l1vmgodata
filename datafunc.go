@@ -24,8 +24,8 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -58,7 +58,7 @@ func init_data() {
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
 
-		linkslen = uint64 (len ((*pdata)[i].links))
+		linkslen = uint64(len((*pdata)[i].links))
 		if linkslen > 0 {
 			// there are links set, remove all:
 			for l = 0; l < linkslen; l++ {
@@ -167,19 +167,19 @@ func remove_data(key string) string {
 			// match = regexp.Match([]byte((*pdata)[i].key))
 			match = (*pdata)[i].key == skey
 			if match {
-				fmt.Println ("remove data: found match...")
+				fmt.Println("remove data: found match...")
 				for j = 0; j < maxdata; j++ {
 					if (*pdata)[j].used {
-						linkslen = uint64 (len ((*pdata)[j].links))
+						linkslen = uint64(len((*pdata)[j].links))
 						if linkslen > 0 {
 							for l = 0; l < linkslen; l++ {
 								// try remove the data link, if possible
 								// linkindex = (*pdata)[j].links[l]
 								//if (*pdata)[linkindex].key == skey {
-									dmutex.Unlock()
-									fmt.Println("remove data: key: " + (*pdata)[j].key)
-									_ = remove_link((*pdata)[j].key, skey)
-									dmutex.Lock()
+								dmutex.Unlock()
+								fmt.Println("remove data: key: " + (*pdata)[j].key)
+								_ = remove_link((*pdata)[j].key, skey)
+								dmutex.Lock()
 								//}
 							}
 						}
@@ -202,7 +202,7 @@ func remove_data(key string) string {
 }
 
 // get info about data base usage, return used space
-func get_used_elements() (uint64) {
+func get_used_elements() uint64 {
 	var i uint64
 	var free uint64 = 0
 
@@ -216,7 +216,6 @@ func get_used_elements() (uint64) {
 	// return free data space
 	return free
 }
-
 
 // link functions ==============================================================
 func get_data_key_compare(key string) (string, uint64) {
@@ -249,14 +248,14 @@ func set_link(key string, keylink string) int {
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
-	if (retstr == ""){
+	if retstr == "" {
 		// key not found
 		// return error code
 		return 1
 	}
 
 	retstr, l = get_data_key_compare(keylink)
-	if (retstr == ""){
+	if retstr == "" {
 		// key not found
 		// return error code
 		return 1
@@ -265,7 +264,7 @@ func set_link(key string, keylink string) int {
 	// both key and keylink are found
 	// check if link was already set
 	dmutex.Lock()
-	for i = 0; i < uint64 (len ((*pdata)[k].links)); i++ {
+	for i = 0; i < uint64(len((*pdata)[k].links)); i++ {
 		if (*pdata)[k].links[i] == l {
 			// error return, link was already set!
 			dmutex.Unlock()
@@ -280,7 +279,7 @@ func set_link(key string, keylink string) int {
 	return 0
 }
 
-func remove_element_by_index[T any](slice []T, index uint64 ) []T {
+func remove_element_by_index[T any](slice []T, index uint64) []T {
 	return append(slice[:index], slice[index+1:]...)
 }
 
@@ -293,14 +292,14 @@ func remove_link(key string, keylink string) int {
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
-	if (retstr == ""){
+	if retstr == "" {
 		// key not found
 		// return error code
 		return 1
 	}
 
 	retstr, l = get_data_key_compare(keylink)
-	if (retstr == ""){
+	if retstr == "" {
 		// keylink not found
 		// return error code
 		return 1
@@ -310,13 +309,13 @@ func remove_link(key string, keylink string) int {
 
 	// both key and keylink are found
 	// search the keylink string index in links
-	for i = 0; i <  uint64 (len ((*pdata)[k].links)); i++  {
+	for i = 0; i < uint64(len((*pdata)[k].links)); i++ {
 		if (*pdata)[k].links[i] == l {
 			// found matching index in the keys link list
 			// rermove it
 			(*pdata)[k].links = remove_element_by_index((*pdata)[k].links, i)
 			dmutex.Unlock()
-            return 0
+			return 0
 		}
 	}
 
@@ -331,13 +330,13 @@ func get_number_of_links(key string) (uint64, string) {
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
-	if (retstr == ""){
+	if retstr == "" {
 		// key not found
 		// return error code
 		return 1, ""
 	}
 
-	linkslen = uint64 (len ((*pdata)[k].links))
+	linkslen = uint64(len((*pdata)[k].links))
 
 	return linkslen, retstr
 }
@@ -349,14 +348,14 @@ func get_link(key string, link_index uint64) string {
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
-	if (retstr == ""){
+	if retstr == "" {
 		// key not found
 		// return error code
 		return ""
 	}
 
-	linkslen = uint64 (len ((*pdata)[k].links))
-    if link_index < 0 || link_index >= linkslen {
+	linkslen = uint64(len((*pdata)[k].links))
+	if link_index < 0 || link_index >= linkslen {
 		// error link index out of range
 		return ""
 	}
@@ -367,7 +366,7 @@ func get_link(key string, link_index uint64) string {
 	return retstr
 }
 
-func get_table_key (index uint64, key uint64) (string, string) {
+func get_table_key(index uint64, key uint64) (string, string) {
 	var i uint64
 	var search_index string = ""
 	var search_index_len uint64 = 0
@@ -381,7 +380,7 @@ func get_table_key (index uint64, key uint64) (string, string) {
 	search_index = search_index + strconv.FormatUint(key, 10)
 	search_index = search_index + "-"
 
-	search_index_len = uint64 (len (search_index))
+	search_index_len = uint64(len(search_index))
 
 	// DEBUG
 	// fmt.Println ("get_table_key: " + search_index)
@@ -392,8 +391,8 @@ func get_table_key (index uint64, key uint64) (string, string) {
 			match = strings.Contains((*pdata)[i].key, search_index)
 			if match {
 				// fmt.Println ("get_table_key: found match!")
-				start = uint64 (search_index_len)
-				end = uint64 (len ((*pdata)[i].key))
+				start = uint64(search_index_len)
+				end = uint64(len((*pdata)[i].key))
 				keystr = (*pdata)[i].key[start:end]
 				dmutex.Unlock()
 				return keystr, (*pdata)[i].value

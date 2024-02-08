@@ -27,14 +27,14 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 func save_data(file_path string) int {
 	var i uint64 = 0
 	var l uint64 = 0
-	var linkslen uint64  = 0
+	var linkslen uint64 = 0
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -64,8 +64,8 @@ func save_data(file_path string) int {
 			}
 
 			// save links number
-			linkslen = uint64 (len ((*pdata)[i].links))
-			_, err = f.WriteString(":link" + " \"" + strconv.FormatInt (int64 (linkslen), 10) + "\"\n")
+			linkslen = uint64(len((*pdata)[i].links))
+			_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64(linkslen), 10) + "\"\n")
 			dmutex.Unlock()
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
@@ -74,16 +74,16 @@ func save_data(file_path string) int {
 
 			// save links
 			if linkslen > 0 {
-				for l = 0; l < linkslen; l++  {
+				for l = 0; l < linkslen; l++ {
 					dmutex.Lock()
-					_, err = f.WriteString(":link" + " \"" + strconv.FormatInt (int64 ((*pdata)[i].links[l]), 10) + "\"\n")
+					_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64((*pdata)[i].links[l]), 10) + "\"\n")
 					if err != nil {
 						fmt.Println("Error writing database file:", err.Error())
 						dmutex.Unlock()
 						return 1
 					}
 					dmutex.Unlock()
-			    }
+				}
 			}
 		}
 	}
@@ -96,7 +96,7 @@ func load_data(file_path string) int {
 	var key string
 	var value string
 	var l uint64 = 0
-	var linkslen uint64  = 0
+	var linkslen uint64 = 0
 	var link uint64 = 0
 
 	// load database file
@@ -129,7 +129,7 @@ func load_data(file_path string) int {
 
 				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
 
-				if  key != "" && key != "link" {
+				if key != "" && key != "link" {
 					// store data
 					dmutex.Lock()
 					(*pdata)[i].used = true
@@ -141,7 +141,7 @@ func load_data(file_path string) int {
 				if key == "link" {
 					// get links number
 
-					linkslen, _  =  strconv.ParseUint (value, 10, 64)
+					linkslen, _ = strconv.ParseUint(value, 10, 64)
 
 					//fmt.Printf ("load: links: %d\n", linkslen)
 
@@ -151,16 +151,16 @@ func load_data(file_path string) int {
 							scanner.Scan()
 							line := scanner.Text()
 							key, value = split_data(line)
-							link, _  =  strconv.ParseUint (value, 10, 64)
+							link, _ = strconv.ParseUint(value, 10, 64)
 
 							//fmt.Printf("load: link: %d\n", link)
 
 							dmutex.Lock()
-							(*pdata)[i].links = append ((*pdata)[i].links, link)
+							(*pdata)[i].links = append((*pdata)[i].links, link)
 							dmutex.Unlock()
 
 							// DEBUG
-							fmt.Println ("got link\n")
+							fmt.Println("got link\n")
 						}
 					}
 				}
@@ -174,7 +174,6 @@ func load_data(file_path string) int {
 	data_index = i
 	return 0
 }
-
 
 // export to .json data file
 func save_data_json(file_path string) int {
@@ -404,14 +403,14 @@ func save_data_table_csv(file_path string) int {
 
 	// get start key
 	for search {
-		keystr, valuestr = get_table_key (index, key)
+		keystr, valuestr = get_table_key(index, key)
 
 		// DEBUG
 		//fmt.Printf("save tavble csv: index: %d, key: %d\n", index, key )
 		//fmt.Println("save table csv: keystr: '" + keystr + "' valuestr: '" + valuestr + "’")
 
 		if keystr != "" {
-            if key > 1 {
+			if key > 1 {
 				_, err = f.WriteString(", ")
 				if err != nil {
 					fmt.Println("Error writing database file:", err.Error())
@@ -440,7 +439,7 @@ func save_data_table_csv(file_path string) int {
 	index = 1
 	for save {
 		for key = 1; key <= keymax; key++ {
-			keystr, valuestr = get_table_key (index, key)
+			keystr, valuestr = get_table_key(index, key)
 			if keystr != "" {
 				if key > 1 {
 					_, err = f.WriteString(", ")
@@ -520,7 +519,7 @@ func load_data_table_csv(file_path string) int {
 			key = 1
 			do_split = true
 			for do_split {
-				key_headerstr, _, header_next = split_data_csv_table (keys_headerstr, header_start)
+				key_headerstr, _, header_next = split_data_csv_table(keys_headerstr, header_start)
 
 				//fmt.Println("csv table import: key: " + key_headerstr)
 
@@ -537,7 +536,7 @@ func load_data_table_csv(file_path string) int {
 				keyfullstr = indexstr + "-" + keystr + "-" + key_headerstr
 				//fmt.Println("csv table import: key full: " + keyfullstr)
 
-				valuestr, _, value_next = split_data_csv_table (line, value_start)
+				valuestr, _, value_next = split_data_csv_table(line, value_start)
 				if valuestr == "" {
 					// end of header, reset
 					value_start = 0
@@ -547,7 +546,7 @@ func load_data_table_csv(file_path string) int {
 
 				//fmt.Println("csv table import: value: " + valuestr)
 
-				if (i < maxdata) {
+				if i < maxdata {
 					dmutex.Lock()
 					(*pdata)[i].used = true
 					(*pdata)[i].key = keyfullstr
