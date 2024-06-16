@@ -88,7 +88,7 @@ func try_to_allocate_more_space() int {
 	var newdatasize uint64
 
 	// save the data into the temp data file
-	if save_data("temp-data") == 1 {
+	if save_data("temp-data.db") == 1 {
 		fmt.Println("error: try_to_allocate_more_space: can't save 'temp-data' file!")
 		return 1
 	}
@@ -105,7 +105,7 @@ func try_to_allocate_more_space() int {
 	// load temporary saved database
 	data_index = 0
 
-	if load_data("temp-data") == 1 {
+	if load_data("temp-data.db") == 1 {
 		fmt.Println("error: try_to_allocate_more_space: can't load 'temp-data' file into new data slice!")
 		return 1
 	}
