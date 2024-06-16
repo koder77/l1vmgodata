@@ -141,7 +141,9 @@ func split_data(input string) (string, string) {
 	// read chars into data
 	for j = i; j < inplen; j++ {
 		if input[i] != '\'' {
-			invalue = invalue + string(input[i])
+			if input[i] != '"' {
+				invalue = invalue + string(input[i])
+			}
 		}
 		i++
 	}

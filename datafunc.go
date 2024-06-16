@@ -84,6 +84,35 @@ func get_free_space() (int, uint64) {
 	return 1, i
 }
 
+func try_to_allocate_more_space() int {
+	var newdatasize uint64
+
+	// save the data into the temp data file
+	if save_data("temp-data") == 1 {
+		fmt.Println("error: try_to_allocate_more_space: can't save 'temp-data' file!")
+		return 1
+	}
+
+	// clear pdata
+	pdata = nil
+
+	// allocate bigger data slice
+	newdatasize = maxdata + 10000
+	newdata := make([]data, newdatasize) // make serverdata slice
+	pdata = &newdata
+	maxdata = newdatasize
+
+	// load temporary saved database
+	data_index = 0
+
+	if load_data("temp-data") == 1 {
+		fmt.Println("error: try_to_allocate_more_space: can't load 'temp-data' file into new data slice!")
+		return 1
+	}
+
+	return 0
+}
+
 func store_data(key string, value string) uint64 {
 	var i uint64 = 0
 	var err int = 0
@@ -94,7 +123,17 @@ func store_data(key string, value string) uint64 {
 		err, i = get_free_space()
 		if err == 1 {
 			// error: no free space
-			return 1
+			// try to allocate bigger array
+			err = try_to_allocate_more_space()
+			if err == 1 {
+				fmt.Println("error: can't allocate more space for data!")
+				return 1
+			}
+			err, i = get_free_space()
+	    	if err == 1 {
+	            fmt.Println("error: can't get free space for data!")
+				return 1
+			}
 		}
 	}
 
