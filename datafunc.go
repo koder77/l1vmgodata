@@ -121,7 +121,7 @@ func try_to_allocate_more_space() int {
 	pdata = nil
 
 	// allocate bigger data slice
-	new_datasize = maxdata + 10000
+	new_datasize = maxdata + add_size
 	newdata := make([]data, new_datasize) // make serverdata slice
 	pdata = &newdata
 	maxdata = new_datasize
