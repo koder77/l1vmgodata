@@ -26,6 +26,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"github.com/pbnjay/memory"
+	"unsafe"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -85,11 +87,33 @@ func get_free_space() (int, uint64) {
 }
 
 func try_to_allocate_more_space() int {
-	var newdatasize uint64
+	var new_datasize uint64
+	var free_system_ram uint64
+	var max_alloc_size uint64
+    var one_data data
+	var add_size uint64 = 10000
+
+    const one_data_size = uint64(unsafe.Sizeof(one_data))
+
+    // get the free system RAM
+	free_system_ram = memory.FreeMemory()
+	max_alloc_size = free_system_ram - (one_data_size * add_size)
+	if max_alloc_size < (one_data_size * add_size) {
+		// error out of memory!
+		fmt.Println("error: try_to_allocate_more_space: out of memory! dumping 'temp-data.db'")
+
+		// save the data into the temp data file
+		if save_data("temp-data.db") == 1 {
+			fmt.Println("error: try_to_allocate_more_space: can't save 'temp-data.db' file!")
+			return 1
+		}
+
+		return 1
+	}
 
 	// save the data into the temp data file
 	if save_data("temp-data.db") == 1 {
-		fmt.Println("error: try_to_allocate_more_space: can't save 'temp-data' file!")
+		fmt.Println("error: try_to_allocate_more_space: can't save 'temp-data.db' file!")
 		return 1
 	}
 
@@ -97,16 +121,16 @@ func try_to_allocate_more_space() int {
 	pdata = nil
 
 	// allocate bigger data slice
-	newdatasize = maxdata + 10000
-	newdata := make([]data, newdatasize) // make serverdata slice
+	new_datasize = maxdata + 10000
+	newdata := make([]data, new_datasize) // make serverdata slice
 	pdata = &newdata
-	maxdata = newdatasize
+	maxdata = new_datasize
 
 	// load temporary saved database
 	data_index = 0
 
 	if load_data("temp-data.db") == 1 {
-		fmt.Println("error: try_to_allocate_more_space: can't load 'temp-data' file into new data slice!")
+		fmt.Println("error: try_to_allocate_more_space: can't load 'temp-data.db' file into new data slice!")
 		return 1
 	}
 
