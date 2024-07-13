@@ -28,6 +28,7 @@ import (
 	"strings"
 	"github.com/pbnjay/memory"
 	"unsafe"
+	"regexp"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -168,6 +169,27 @@ func store_data(key string, value string) uint64 {
 	(*pdata)[i].value = value
 	dmutex.Unlock()
 	return 0
+}
+
+func get_data_key_regexp(key string) string {
+	var i uint64
+	var match bool
+
+	skey := strings.Trim(key, "\n")
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			match, _ = regexp.MatchString(skey, (*pdata)[i].key)
+			if match {
+				dmutex.Unlock()
+				nvalue := strings.Trim((*pdata)[i].key, "'\n")
+				return nvalue
+			}
+		}
+	}
+	dmutex.Unlock()
+	// no matching key found, return empty string
+	return ""
 }
 
 func get_data_key(key string) string {

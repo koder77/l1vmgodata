@@ -42,6 +42,7 @@ const (
 	STORE_DATA          = "store data"
 	GET_DATA_KEY        = "get key"
 	GET_DATA_VALUE      = "get value"
+	GET_DATA_REGEXP_KEY = "get regex key"
 	REMOVE_DATA         = "remove"
 	CLOSE_CONNECTION    = "close"
 	SAVE_DATA           = "save"
@@ -306,6 +307,38 @@ func process_client(connection net.Conn) {
 			key = split_key(string(buffer[:mLen]))
 			if key != "" {
 				value = remove_data(key)
+				if value != "" {
+					_, err = connection.Write([]byte(value))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+					_, err = connection.Write([]byte("\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+			}
+			continue
+		}
+
+		// get key with regex expression
+		regexp_reg_key := regexp.MustCompile(GET_DATA_REGEXP_KEY)
+		match = regexp_reg_key.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching key
+			key = split_key(string(buffer[:mLen]))
+			if key != "" {
+				value = get_data_key_regexp(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
 					if err != nil {
@@ -721,7 +754,7 @@ func process_client(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.1 ...")
+	fmt.Println("l1vmgodata start 0.9.2 ...")
 
 	if len(os.Args) == 4 || len(os.Args) == 5 {
 		server_host = os.Args[1]

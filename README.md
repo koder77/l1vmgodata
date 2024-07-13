@@ -39,6 +39,7 @@ The commands are:
 ```
 store data
 get key
+get regex key
 get value
 remove
 close
@@ -70,6 +71,13 @@ Get value:
 
 ```
 get value 'test 1234'
+foobar
+```
+
+Get regex key:
+
+```
+get regex key :foo.
 foobar
 ```
 
