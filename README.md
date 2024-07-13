@@ -1,4 +1,4 @@
-L1VMgodata 0.9.1
+L1VMgodata 0.9.2
 ================
 This is my first go project.
 This database is written for data exchange between programs.
