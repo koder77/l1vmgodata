@@ -99,6 +99,14 @@ func parse_web(w http.ResponseWriter, command string, key string, value string) 
 
 		send_form_end(w)
 
+	case GET_DATA_REGEXP_KEY:
+		send_form_head(w)
+
+		value_ret = get_data_key_regexp(key)
+		fmt.Fprintf(w, "%s\n", value_ret)
+
+		send_form_end(w)
+
 	case SAVE_DATA:
 		send_form_head(w)
 
