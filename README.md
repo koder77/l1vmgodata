@@ -102,13 +102,13 @@ close
 OK
 ```
 
-Export data base into ".json" file:
+Export database into ".json" file:
 
 ```
 json-export 'test.json'
 ```
 
-Import data base from ".json" file:
+Import database from ".json" file:
 
 ```
 json-import 'test.json'
