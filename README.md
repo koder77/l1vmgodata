@@ -41,6 +41,7 @@ store data
 get key
 get regex key
 get value
+get regex value
 remove
 close
 save
