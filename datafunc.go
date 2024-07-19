@@ -192,6 +192,27 @@ func get_data_key_regexp(key string) string {
 	return ""
 }
 
+func get_data_value_regexp(value string) string {
+	var i uint64
+	var match bool
+
+	svalue := strings.Trim(value, "\n")
+	dmutex.Lock()
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			match, _ = regexp.MatchString(svalue, (*pdata)[i].value)
+			if match {
+				dmutex.Unlock()
+				nvalue := strings.Trim((*pdata)[i].key, "'\n")
+				return nvalue
+			}
+		}
+	}
+	dmutex.Unlock()
+	// no matching value found, return empty string
+	return ""
+}
+
 func get_data_key(key string) string {
 	var i uint64
 	var match bool

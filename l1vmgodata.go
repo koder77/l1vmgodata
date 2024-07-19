@@ -43,6 +43,7 @@ const (
 	GET_DATA_KEY        = "get key"
 	GET_DATA_VALUE      = "get value"
 	GET_DATA_REGEXP_KEY = "get regex key"
+	GET_DATA_REGEXP_VALUE = "get regex value"
 	REMOVE_DATA         = "remove"
 	CLOSE_CONNECTION    = "close"
 	SAVE_DATA           = "save"
@@ -341,6 +342,38 @@ func process_client(connection net.Conn) {
 				value = get_data_key_regexp(key)
 				if value != "" {
 					_, err = connection.Write([]byte(value))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+					_, err = connection.Write([]byte("\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+			}
+			continue
+		}
+
+		// get value with regex expression
+		regexp_reg_value := regexp.MustCompile(GET_DATA_REGEXP_VALUE )
+		match = regexp_reg_value.Match([]byte(buffer[:mLen]))
+		if match {
+			// try to find matching key
+			value = split_value(string(buffer[:mLen]))
+			if value != "" {
+				key = get_data_value_regexp(value)
+				if key != "" {
+					_, err = connection.Write([]byte(key))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
 					}
