@@ -1,3 +1,8 @@
+L1VMgodata - (0.9.3)
+    Removed the regex command search and use HasPrefix now.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Fri 26 Jul 20:09 +0200
+
 L1VMgodata - (0.9.2)
    NEW: "get regex key" command to get a regex match of a key search string.
 

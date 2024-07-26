@@ -24,11 +24,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/pbnjay/memory"
+	"regexp"
 	"strconv"
 	"strings"
-	"github.com/pbnjay/memory"
 	"unsafe"
-	"regexp"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
@@ -91,12 +91,12 @@ func try_to_allocate_more_space() int {
 	var new_datasize uint64
 	var free_system_ram uint64
 	var max_alloc_size uint64
-    var one_data data
+	var one_data data
 	var add_size uint64 = 10000
 
-    const one_data_size = uint64(unsafe.Sizeof(one_data))
+	const one_data_size = uint64(unsafe.Sizeof(one_data))
 
-    // get the free system RAM
+	// get the free system RAM
 	free_system_ram = memory.FreeMemory()
 	max_alloc_size = free_system_ram - (one_data_size * add_size)
 	if max_alloc_size < (one_data_size * add_size) {
@@ -155,8 +155,8 @@ func store_data(key string, value string) uint64 {
 				return 1
 			}
 			err, i = get_free_space()
-	    	if err == 1 {
-	            fmt.Println("error: can't get free space for data!")
+			if err == 1 {
+				fmt.Println("error: can't get free space for data!")
 				return 1
 			}
 		}

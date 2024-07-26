@@ -27,8 +27,8 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -39,28 +39,28 @@ const (
 
 // data base commands
 const (
-	STORE_DATA          = "store data"
-	GET_DATA_KEY        = "get key"
-	GET_DATA_VALUE      = "get value"
-	GET_DATA_REGEXP_KEY = "get regex key"
+	STORE_DATA            = "store data"
+	GET_DATA_KEY          = "get key"
+	GET_DATA_VALUE        = "get value"
+	GET_DATA_REGEXP_KEY   = "get regex key"
 	GET_DATA_REGEXP_VALUE = "get regex value"
-	REMOVE_DATA         = "remove"
-	CLOSE_CONNECTION    = "close"
-	SAVE_DATA           = "save"
-	LOAD_DATA           = "load"
-	SAVE_DATA_JSON      = "json-export"
-	LOAD_DATA_JSON      = "json-import"
-	SAVE_DATA_CSV       = "csv-export"
-	LOAD_DATA_CSV       = "csv-import"
-	SAVE_DATA_TABLE_CSV = "csv-table-export"
-	LOAD_DATA_TABLE_CSV = "csv-table-import"
-	ERASE_DATA          = "erase all"
-	GET_USED_ELEMENTS   = "usage"
-	SET_LINK            = "set-link"
-	REMOVE_LINK         = "rem-link"
-	GET_LINKS_NUMBER    = "get-links-number"
-	GET_LINK_NAME       = "get-link-name"
-	EXIT                = "exit"
+	REMOVE_DATA           = "remove"
+	CLOSE_CONNECTION      = "close"
+	SAVE_DATA             = "save"
+	LOAD_DATA             = "load"
+	SAVE_DATA_JSON        = "json-export"
+	LOAD_DATA_JSON        = "json-import"
+	SAVE_DATA_CSV         = "csv-export"
+	LOAD_DATA_CSV         = "csv-import"
+	SAVE_DATA_TABLE_CSV   = "csv-table-export"
+	LOAD_DATA_TABLE_CSV   = "csv-table-import"
+	ERASE_DATA            = "erase all"
+	GET_USED_ELEMENTS     = "usage"
+	SET_LINK              = "set-link"
+	REMOVE_LINK           = "rem-link"
+	GET_LINKS_NUMBER      = "get-links-number"
+	GET_LINK_NAME         = "get-link-name"
+	EXIT                  = "exit"
 )
 
 type data struct {
@@ -164,6 +164,7 @@ func process_client(connection net.Conn) {
 	var link uint64 = 0
 
 	var match bool
+	var inputstr string = ""
 
 	for run_loop {
 		mLen, err := connection.Read(buffer)
@@ -175,10 +176,12 @@ func process_client(connection net.Conn) {
 		}
 		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
 		// fmt.Println("length: ", mLen)
-
+		// fmt.Println(strings.HasPrefix(str, "the")) // false
 		// check close
-		regexp_close := regexp.MustCompile(CLOSE_CONNECTION)
-		match = regexp_close.Match([]byte(buffer[:mLen]))
+
+		inputstr = string(buffer)
+
+		match = strings.HasPrefix(inputstr, CLOSE_CONNECTION)
 		if match {
 			_, err = connection.Write([]byte("OK\n"))
 			run_loop = false
@@ -186,8 +189,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check exit
-		regexp_exit := regexp.MustCompile(EXIT)
-		match = regexp_exit.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, EXIT)
 		if match {
 			_, err = connection.Write([]byte("OK\n"))
 
@@ -201,8 +203,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// store data
-		regexp_store := regexp.MustCompile(STORE_DATA)
-		match = regexp_store.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, STORE_DATA)
 		if match {
 			// store key/value pair
 			// try to store data
@@ -236,8 +237,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// get data key
-		regexp_key := regexp.MustCompile(GET_DATA_KEY)
-		match = regexp_key.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_DATA_KEY)
 		if match {
 			// try to find matching key
 
@@ -269,8 +269,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// get data value
-		regexp_value := regexp.MustCompile(GET_DATA_VALUE)
-		match = regexp_value.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_DATA_VALUE)
 		if match {
 			// try to find matching value
 			value = split_value(string(buffer[:mLen]))
@@ -301,8 +300,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// remove data, send value
-		regexp_rdata := regexp.MustCompile(REMOVE_DATA)
-		match = regexp_rdata.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, REMOVE_DATA)
 		if match {
 			// try to find matching key
 			key = split_key(string(buffer[:mLen]))
@@ -333,8 +331,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// get key with regex expression
-		regexp_reg_key := regexp.MustCompile(GET_DATA_REGEXP_KEY)
-		match = regexp_reg_key.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_DATA_REGEXP_KEY)
 		if match {
 			// try to find matching key
 			key = split_key(string(buffer[:mLen]))
@@ -365,8 +362,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// get value with regex expression
-		regexp_reg_value := regexp.MustCompile(GET_DATA_REGEXP_VALUE )
-		match = regexp_reg_value.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_DATA_REGEXP_VALUE)
 		if match {
 			// try to find matching key
 			value = split_value(string(buffer[:mLen]))
@@ -397,8 +393,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check save
-		regexp_save := regexp.MustCompile(SAVE_DATA)
-		match = regexp_save.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, SAVE_DATA)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -424,8 +419,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check load
-		regexp_load := regexp.MustCompile(LOAD_DATA)
-		match = regexp_load.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, LOAD_DATA)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -451,8 +445,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check save
-		regexp_save_json := regexp.MustCompile(SAVE_DATA_JSON)
-		match = regexp_save_json.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, SAVE_DATA_JSON)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -478,8 +471,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check load
-		regexp_load_json := regexp.MustCompile(LOAD_DATA_JSON)
-		match = regexp_load_json.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, LOAD_DATA_JSON)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -505,8 +497,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check save CSV
-		regexp_save_csv := regexp.MustCompile(SAVE_DATA_CSV)
-		match = regexp_save_csv.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, SAVE_DATA_CSV)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -531,8 +522,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		regexp_load_csv := regexp.MustCompile(LOAD_DATA_CSV)
-		match = regexp_load_csv.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, LOAD_DATA_CSV)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -558,8 +548,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check save table CSV
-		regexp_save_table_csv := regexp.MustCompile(SAVE_DATA_TABLE_CSV)
-		match = regexp_save_table_csv.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, SAVE_DATA_TABLE_CSV)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -585,8 +574,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check load table CSV
-		regexp_load_table_csv := regexp.MustCompile(LOAD_DATA_TABLE_CSV)
-		match = regexp_load_table_csv.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, LOAD_DATA_TABLE_CSV)
 		if match {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
@@ -612,8 +600,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check erase all data
-		regexp_erase_all := regexp.MustCompile(ERASE_DATA)
-		match = regexp_erase_all.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, ERASE_DATA)
 		if match {
 			init_data()
 			_, err = connection.Write([]byte("OK\n"))
@@ -624,8 +611,7 @@ func process_client(connection net.Conn) {
 		}
 
 		// check get free elements
-		regexp_get_used_elements := regexp.MustCompile(GET_USED_ELEMENTS)
-		match = regexp_get_used_elements.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_USED_ELEMENTS)
 		if match {
 			used_space = get_used_elements()
 			used_space_percent = float64(100 * used_space / maxdata)
@@ -638,8 +624,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		regexp_set_link := regexp.MustCompile(SET_LINK)
-		match = regexp_set_link.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, SET_LINK)
 		if match {
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
@@ -672,8 +657,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		regexp_remove_link := regexp.MustCompile(REMOVE_LINK)
-		match = regexp_remove_link.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, REMOVE_LINK)
 		if match {
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
@@ -706,8 +690,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		regexp_get_number_of_links := regexp.MustCompile(GET_LINKS_NUMBER)
-		match = regexp_get_number_of_links.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_LINKS_NUMBER)
 		if match {
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
@@ -736,8 +719,7 @@ func process_client(connection net.Conn) {
 			continue
 		}
 
-		regexp_get_link := regexp.MustCompile(GET_LINK_NAME)
-		match = regexp_get_link.Match([]byte(buffer[:mLen]))
+		match = strings.HasPrefix(inputstr, GET_LINK_NAME)
 		if match {
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
@@ -787,7 +769,7 @@ func process_client(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.2 ...")
+	fmt.Println("l1vmgodata start 0.9.3 ...")
 
 	if len(os.Args) == 4 || len(os.Args) == 5 {
 		server_host = os.Args[1]
