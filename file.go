@@ -172,6 +172,7 @@ func load_data(file_path string) int {
 		}
 	}
 	data_index = i
+	free_index = i + 1   // set next free index
 	return 0
 }
 
