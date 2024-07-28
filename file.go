@@ -35,6 +35,8 @@ func save_data(file_path string) int {
 	var i uint64 = 0
 	var l uint64 = 0
 	var linkslen uint64 = 0
+
+	os.Remove(file_path)
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -111,10 +113,15 @@ func load_data(file_path string) int {
 	// set i to data_index, so we can load more than one database. And don't start on zero index again!
 	i = data_index
 
+	//fmt.Println("DEBUG: load: i start =", i)
+
 	// read and check header
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		//fmt.Println("DEBUG: i:", i, " line:", line)
+
 		if i < maxdata {
 			// enough data memory, load data
 			if header_line == 0 {
@@ -163,11 +170,12 @@ func load_data(file_path string) int {
 							fmt.Println("got link\n")
 						}
 					}
+					i++
 				}
-				i++
 			}
 		} else {
 			fmt.Println("Error reading database: out of memory: entries overflow!")
+			fmt.Println("Failed to load index:", i, "into maxdata:", maxdata)
 			return 1
 		}
 	}

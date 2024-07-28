@@ -107,7 +107,7 @@ func try_to_allocate_more_space() int {
 	var free_system_ram uint64
 	var max_alloc_size uint64
 	var one_data data
-	var add_size uint64 = 10000
+	var add_size uint64 = 20000
 
 	const one_data_size = uint64(unsafe.Sizeof(one_data))
 
@@ -142,7 +142,9 @@ func try_to_allocate_more_space() int {
 	pdata = &newdata
 	maxdata = new_datasize
 
-    fmt.Println("new_datasize: ", maxdata)
+    fmt.Println("new datasize:", maxdata)
+
+	init_data ()
 
 	// load temporary saved database
 	data_index = 0
