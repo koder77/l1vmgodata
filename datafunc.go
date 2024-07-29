@@ -190,6 +190,37 @@ func store_data(key string, value string) uint64 {
 	return 0
 }
 
+func store_data_new(key string, value string) uint64 {
+	// don't check if key is already in database
+	var i uint64 = 0
+	var err int = 0
+
+	// get free space
+	err, i = get_free_space()
+	if err == 1 {
+		// error: no free space
+		// try to allocate bigger array
+		err = try_to_allocate_more_space()
+		if err == 1 {
+			fmt.Println("error: can't allocate more space for data!")
+			return 1
+		}
+		err, i = get_free_space()
+		if err == 1 {
+			fmt.Println("error: can't get free space for data!")
+			return 1
+		}
+	}
+
+	// store data at index i
+	dmutex.Lock()
+	(*pdata)[i].used = true
+	(*pdata)[i].key = key
+	(*pdata)[i].value = value
+	dmutex.Unlock()
+	return 0
+}
+
 func get_data_key_regexp(key string) string {
 	var i uint64
 	var match bool

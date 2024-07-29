@@ -40,6 +40,7 @@ const (
 // data base commands
 const (
 	STORE_DATA            = "store data"
+	STORE_DATA_NEW        = "store data new"
 	GET_DATA_KEY          = "get key"
 	GET_DATA_VALUE        = "get value"
 	GET_DATA_REGEXP_KEY   = "get regex key"
@@ -201,6 +202,41 @@ func process_client(connection net.Conn) {
 			server.Close()
 
 			os.Exit(0)
+		}
+
+		// store new data, don't check if key already used
+		// extreme speedup over store data!!!
+		match = strings.HasPrefix(inputstr, STORE_DATA_NEW)
+		if match {
+			// store key/value pair
+			// try to store data
+			if check_data(string(buffer[:mLen])) != 0 {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+			key, value = split_data(string(buffer[:mLen]))
+			if key != "" {
+				if store_data_new(key, value) == 0 {
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				} else {
+					_, err = connection.Write([]byte("ERROR\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+			}
+			continue
 		}
 
 		// store data

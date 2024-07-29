@@ -38,6 +38,7 @@ The commands are:
 
 ```
 store data
+store data new
 get key
 get regex key
 get value
@@ -59,6 +60,19 @@ set-link
 rem-link
 get-links-number
 get-link-name
+```
+
+Store data:
+
+```
+store data :foo 'foo'
+```
+
+A faster command is "store data new". It does not check if a key is already used.
+You have to take care of it! It is exponentially faster than "store data"!
+
+```
+store data new :foo 'foo'
 ```
 
 Get key/remove:
