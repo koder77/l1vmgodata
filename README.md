@@ -65,14 +65,14 @@ get-link-name
 Store data:
 
 ```
-store data :foo 'foo'
+store data :foobar 'test 1234'
 ```
 
 A faster command is "store data new". It does not check if a key is already used.
 You have to take care of it! It is exponentially faster than "store data"!
 
 ```
-store data new :foo 'foo'
+store data new :foobar 'test 1234'
 ```
 
 Get key/remove:
