@@ -14,7 +14,7 @@ The second is for the new web browser formular to save/load data.
 NEW: in the web form the form is always visible. also after commands are executed.
 
 NEW: TLS/SSL connections with authentication. 
-See l1vmgodata.go comments at top!
+See "l1vmgodata.go" comments at top!
 
 You can connect via:
 
