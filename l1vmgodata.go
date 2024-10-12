@@ -20,6 +20,10 @@
 
 // tutorial code for tcp/ip sockets taken from: https://www.developer.com/languages/intro-socket-programming-go/
 //
+// To create a SSL certificate with name "cert.pem":
+//
+// $ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout cert.pem -out cert.pem
+//
 // check TLS/SSL conection:
 // openssl s_client -connect 127.0.0.1:2000 -brief
 //
