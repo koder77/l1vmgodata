@@ -1,4 +1,4 @@
-L1VMgodata 0.9.3
+L1VMgodata 0.9.4
 ================
 This is my first go project.
 This database is written for data exchange between programs.
@@ -12,6 +12,9 @@ NEW: now you have to set two ports. The first one is for direct access with a pr
 The second is for the new web browser formular to save/load data.
 
 NEW: in the web form the form is always visible. also after commands are executed.
+
+NEW: TLS/SSL connections with authentication
+See l1vmgodata.go comments at top!
 
 You can connect via:
 

@@ -19,10 +19,23 @@
  */
 
 // tutorial code for tcp/ip sockets taken from: https://www.developer.com/languages/intro-socket-programming-go/
+//
+// check TLS/SSL conection:
+// openssl s_client -connect 127.0.0.1:2000 -brief
+//
+// run with TLS/SSL on:
+// ./l1vmgodata 127.0.0.1 2000 tls=on off
+// set a new password below!!!
+//
+// login with:
+// login 'password'
 
 package main
 
 import (
+	"crypto/tls"
+	"crypto/sha256"
+	"flag"
 	"bufio"
 	"fmt"
 	"net"
@@ -62,6 +75,7 @@ const (
 	GET_LINKS_NUMBER      = "get-links-number"
 	GET_LINK_NAME         = "get-link-name"
 	EXIT                  = "exit"
+	AUTH                  = "login "
 )
 
 type data struct {
@@ -79,6 +93,11 @@ var server_http_port string = ""
 var server_host = "localhost"
 var server net.Listener
 var pdata *[]data
+var tls_flag string = ""
+var tls_sock bool = false // set to true if TLS/SSL socket used
+
+// TLS password: change!!!
+var tls_password = "supernova@8753"
 
 // ip addresses whitelist
 var ip_whitelist []string
@@ -153,6 +172,49 @@ func run_server() {
 	}
 }
 
+func run_server_tls() {
+	var client_ip string
+
+	fmt.Println("run_server...")
+	if server_http_port != "off" {
+		go handle_http_request()
+	}
+
+	certFile := flag.String("cert", "cert.pem", "certificate PEM file")
+	keyFile := flag.String("key", "cert.pem", "key PEM file")
+	flag.Parse()
+
+	cert, err := tls.LoadX509KeyPair(*certFile, *keyFile)
+	if err != nil {
+		fmt.Println("Error on TLS certificate: ", err.Error())
+		os.Exit(1)
+	}
+	config := &tls.Config{Certificates: []tls.Certificate{cert}}
+
+	server, err := tls.Listen(SERVER_TYPE, server_host+":"+server_port, config)
+	if err != nil {
+		fmt.Println("Error listening:", err.Error())
+		os.Exit(1)
+	}
+	defer server.Close()
+	fmt.Println("Listening on " + server_host + ":" + server_port)
+	fmt.Println("Waiting for client...")
+	for {
+		connection, err := server.Accept()
+		if err != nil {
+			fmt.Println("Error accepting:", err.Error())
+			os.Exit(1)
+		}
+		client_ip = get_client_ip(connection.RemoteAddr().String())
+		if check_whitelist(client_ip) {
+			fmt.Println("client connected:", client_ip)
+			go process_client(connection)
+		} else {
+			fmt.Println("access denied!", client_ip)
+		}
+	}
+}
+
 func process_client(connection net.Conn) {
 	var run_loop bool = true
 	buffer := make([]byte, 4096)
@@ -167,6 +229,8 @@ func process_client(connection net.Conn) {
 
 	var match bool
 	var inputstr string = ""
+
+	var tls_auth bool = false // set to true if user password matches l1vmgodata password
 
 	for run_loop {
 		mLen, err := connection.Read(buffer)
@@ -202,6 +266,47 @@ func process_client(connection net.Conn) {
 			server.Close()
 
 			os.Exit(0)
+		}
+
+		// check authentication
+		match = strings.HasPrefix(inputstr, AUTH)
+		if match {
+			fmt.Print("got login... ")
+
+			value = split_value(string(buffer[:mLen]))
+			if value == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			}
+
+			// hash value user password
+
+			if sha256.Sum256([]byte(value)) == sha256.Sum256([]byte(tls_password) ){
+				tls_auth = true
+
+				fmt.Println("ok!")
+
+				_, err = connection.Write([]byte("OK\n"))
+				if err != nil {
+					fmt.Println("process_client: Error authenticate:", err.Error())
+				}
+			} else {
+				fmt.Println("access denied! ")
+
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error authenticate:", err.Error())
+				}
+			}
+			continue
+		}
+
+		if tls_sock == true {
+			if tls_auth != true {
+				continue
+			}
 		}
 
 		// store new data, don't check if key already used
@@ -805,26 +910,30 @@ func process_client(connection net.Conn) {
 }
 
 func main() {
-	fmt.Println("l1vmgodata <ip> <port> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.3 ...")
+	fmt.Println("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
+	fmt.Println("l1vmgodata start 0.9.4 ...")
 
-	if len(os.Args) == 4 || len(os.Args) == 5 {
+	fmt.Println("args: ", len(os.Args))
+
+	// check error case:
+	if len(os.Args) <= 4 {
+		fmt.Println("Arguments error! Need ip, ports, tls flag and http-port!")
+		os.Exit(1)
+	}
+
+	if len(os.Args) == 5 || len(os.Args) == 6 {
 		server_host = os.Args[1]
 		server_port = os.Args[2]
-		server_http_port = os.Args[3]
+		tls_flag = os.Args[3]
+		server_http_port = os.Args[4]
 	}
-	if len(os.Args) == 5 {
+	if len(os.Args) == 6 {
 		// get maxdata from command line
-		user_maxdata, err := strconv.ParseInt(os.Args[4], 10, 64)
+		user_maxdata, err := strconv.ParseInt(os.Args[5], 10, 64)
 		if err != nil {
 			panic(err)
 		}
 		maxdata = uint64(user_maxdata)
-	}
-	// check error case:
-	if len(os.Args) <= 2 {
-		fmt.Println("Arguments error! Need ip and ports!")
-		os.Exit(1)
 	}
 
 	if !read_ip_whitelist() {
@@ -836,5 +945,13 @@ func main() {
 	pdata = &servdata
 
 	init_data()
-	run_server()
+
+	if tls_flag == "tls=on" {
+		fmt.Println("running server: TLS on!")
+		tls_sock = true
+		run_server_tls()
+	} else {
+		fmt.Println("running server: normal socket!")
+		run_server()
+	}
 }
