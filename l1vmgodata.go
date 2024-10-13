@@ -24,21 +24,21 @@
 //
 // $ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout cert.pem -out cert.pem
 //
+// create a password file user and password with: "createuser" program
+//
 // check TLS/SSL conection:
 // openssl s_client -connect 127.0.0.1:2000 -brief
 //
 // run with TLS/SSL on:
 // ./l1vmgodata 127.0.0.1 2000 tls=on off
-// set a new password below!!!
 //
 // login with:
-// login 'password'
+// login :username 'password'
 
 package main
 
 import (
 	"crypto/tls"
-	"crypto/sha256"
 	"flag"
 	"bufio"
 	"fmt"
@@ -100,8 +100,7 @@ var pdata *[]data
 var tls_flag string = ""
 var tls_sock bool = false // set to true if TLS/SSL socket used
 
-// TLS password: change!!!
-var tls_password = "supernova@8753"
+var user_file string = "users.config"
 
 // ip addresses whitelist
 var ip_whitelist []string
@@ -277,6 +276,14 @@ func process_client(connection net.Conn) {
 		if match {
 			fmt.Print("got login... ")
 
+			key = split_key(string(buffer[:mLen]))
+			if key == "" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error get number of links:", err.Error())
+				}
+			}
+
 			value = split_value(string(buffer[:mLen]))
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
@@ -286,17 +293,15 @@ func process_client(connection net.Conn) {
 			}
 
 			// hash value user password
-
-			if sha256.Sum256([]byte(value)) == sha256.Sum256([]byte(tls_password) ){
+			if check_user(user_file, key, value) == 0 {
 				tls_auth = true
-
 				fmt.Println("ok!")
 
 				_, err = connection.Write([]byte("OK\n"))
 				if err != nil {
 					fmt.Println("process_client: Error authenticate:", err.Error())
 				}
-			} else {
+			} else  {
 				fmt.Println("access denied! ")
 
 				_, err = connection.Write([]byte("ERROR\n"))

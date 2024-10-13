@@ -24,6 +24,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"bufio"
 	"fmt"
 	"os"
@@ -579,3 +580,55 @@ func load_data_table_csv(file_path string) int {
 	}
 	return 0
 }
+
+// check user name in password file
+func check_user(file_path string, user string, password string) int {
+	// load database file
+	var user_list string
+	var password_hash string
+	var salt string = ""
+	var parse_loop = 0
+
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Println("Error opening user file: " + file_path + " " + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if parse_loop == 0 {
+			// get first line data: username and password hash
+			user_list, password_hash = split_data_csv(line)
+			password_hash = fmt.Sprintf("%s", password_hash[1:])
+			parse_loop = 1
+		} else {
+			// read second line: salt
+			line = scanner.Text()
+			_, salt = split_data_csv(line)
+
+			salt = fmt.Sprintf("%s", salt[1:])
+			password = password + salt
+
+			if user_list == user {
+				// found valid user name, check for password match
+				password_file_string := fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
+
+				comp := strings.Compare(password_hash, password_file_string)
+				if comp == 0 {
+					return 0
+				}
+			}
+		}
+	}
+	// user and password don't match
+	return 1
+}	
+	
+
+
+	
