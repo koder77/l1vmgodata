@@ -586,6 +586,7 @@ func check_user(file_path string, user string, password string) int {
 	// load database file
 	var user_list string
 	var password_hash string
+	var password_salt string
 	var salt string = ""
 	var parse_loop = 0
 
@@ -612,17 +613,18 @@ func check_user(file_path string, user string, password string) int {
 			_, salt = split_data_csv(line)
 
 			salt = fmt.Sprintf("%s", salt[1:])
-			password = password + salt
+			password_salt = password + salt
 
 			if user_list == user {
 				// found valid user name, check for password match
-				password_file_string := fmt.Sprintf("%x", sha256.Sum256([]byte(password)))
+				password_file_string := fmt.Sprintf("%x", sha256.Sum256([]byte(password_salt)))
 
 				comp := strings.Compare(password_hash, password_file_string)
 				if comp == 0 {
 					return 0
 				}
 			}
+			parse_loop = 0
 		}
 	}
 	// user and password don't match
