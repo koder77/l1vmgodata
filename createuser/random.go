@@ -18,10 +18,6 @@ func randomString(n int) string {
     return sb.String()
 }
 
-//func randomSeed() {
-//   rand.Seed(time.Now().UnixNano())
-//}
-
 func randomSeed() {
     var b [8]byte
     _, err := crypto_rand.Read(b[:])
