@@ -79,7 +79,7 @@ const (
 	GET_LINKS_NUMBER      = "get-links-number"
 	GET_LINK_NAME         = "get-link-name"
 	EXIT                  = "exit"
-	AUTH                  = "login "
+	AUTH                  = "login"
 )
 
 type data struct {
