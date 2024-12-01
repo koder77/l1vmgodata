@@ -212,7 +212,7 @@ exit command to quit the database
 
 NEW
 ===
-CSV table export. The data must be stored like this (chem.db):
+CSV table export. The data must be stored like this (chem.l1db):
 
 ```
 l1vmgodata database
