@@ -32,10 +32,26 @@ import (
 	"strings"
 )
 
+func check_filename(file_path string) bool {
+	var ret bool
+	// if filepath contains "..", return 1
+	// this is then an illegal one, because it could escape the data base file root!
+	ret = strings.Contains(file_path, "..")
+
+	if ret == true {
+		fmt.Println("Error database filename: " + file_path + " is illegal!")
+	}
+	return (ret)
+}
+
 func save_data(file_path string) int {
 	var i uint64 = 0
 	var l uint64 = 0
 	var linkslen uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
+	}
 
 	os.Remove(file_path)
 	// create file
@@ -90,6 +106,8 @@ func save_data(file_path string) int {
 			}
 		}
 	}
+
+	fmt.Println("Log: database " + file_path + " saved!")
 	return 0
 }
 
@@ -101,6 +119,10 @@ func load_data(file_path string) int {
 	var l uint64 = 0
 	var linkslen uint64 = 0
 	var link uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
+	}
 
 	// load database file
 	file, err := os.Open(file_path)
@@ -182,12 +204,19 @@ func load_data(file_path string) int {
 	}
 	data_index = i
 	free_index = i // set next free index
+
+	fmt.Println("Log: database " + file_path + " loaded!")
 	return 0
 }
 
 // export to .json data file
 func save_data_json(file_path string) int {
 	var i uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
+	}
+
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -231,6 +260,7 @@ func save_data_json(file_path string) int {
 		return 1
 	}
 
+	fmt.Println("Log: database JSON " + file_path + " saved!")
 	return 0
 }
 
@@ -240,6 +270,11 @@ func load_data_json(file_path string) int {
 	var header_line = 0
 	var key string
 	var value string
+
+	if check_filename(file_path) == true {
+		return 1
+	}
+
 	// open file
 	file, err := os.Open(file_path)
 	if err != nil {
@@ -285,12 +320,19 @@ func load_data_json(file_path string) int {
 		}
 	}
 	data_index = i
+
+	fmt.Println("Log: database JSON " + file_path + " loaded!")
 	return 0
 }
 
 // export CSV
 func save_data_csv(file_path string) int {
 	var i uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
+	}
+
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -321,6 +363,8 @@ func save_data_csv(file_path string) int {
 		}
 	}
 	dmutex.Unlock()
+
+	fmt.Println("Log: database CSV " + file_path + " saved!")
 	return 0
 }
 
@@ -329,6 +373,10 @@ func load_data_csv(file_path string) int {
 	var header_line = 0
 	var key string
 	var value string
+
+	if check_filename(file_path) == true {
+		return 1
+	}
 
 	// load database file
 	file, err := os.Open(file_path)
@@ -371,6 +419,8 @@ func load_data_csv(file_path string) int {
 
 	}
 	data_index = i
+
+	fmt.Println("Log: database JSON " + file_path + " loaded!")
 	return 0
 }
 
@@ -402,6 +452,11 @@ func save_data_table_csv(file_path string) int {
 	var valuestr string = ""
 	var search bool = true
 	var save bool = true
+
+	if check_filename(file_path) == true {
+		return 1
+	}
+
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -480,6 +535,7 @@ func save_data_table_csv(file_path string) int {
 		index++
 	}
 
+	fmt.Println("Log: database CSV table " + file_path + " saved!")
 	return 0
 }
 
@@ -502,6 +558,10 @@ func load_data_table_csv(file_path string) int {
 	var header_next int = 0
 	//var header_comma_pos int
 	var do_split bool = true
+
+	if check_filename(file_path) == true {
+		return 1
+	}
 
 	// load database file
 	file, err := os.Open(file_path)
@@ -578,6 +638,8 @@ func load_data_table_csv(file_path string) int {
 			index++
 		}
 	}
+
+	fmt.Println("Log: database CSV table " + file_path + " loaded!")
 	return 0
 }
 
