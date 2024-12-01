@@ -21,7 +21,14 @@ $ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout cert.pem -out cert
 Create a password file user and password with: "createuser" program.
 The name of the users file is: "users.config". It stores the user name and the password hashes and the salt. It has two entry lines for each user!
 
-There is a "settings.l1db" file. It stores the path for all databases. You need to set an existing path there. I did set a directory "l1vmgodata" in my "/home" directory. You have to change this!
+There is a "settings.l1db" file. It stores the path for all databases. You need to set an existing path there. I did set a directory "l1vmgodata" in my "/home" directory. You have to change this:
+
+```
+l1vmgodata database
+:database-root "/home/stefan/l1vmgodata/"
+:link '0'
+```
+
 
 Run with TLS/SSL on:
 
