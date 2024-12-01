@@ -96,7 +96,7 @@ var dmutex sync.Mutex // data mutex
 
 func read_ip_whitelist() bool {
 	// load database file
-	file, err := os.Open("whitelist.txt")
+	file, err := os.Open("whitelist.config")
 	if err != nil {
 		fmt.Println("Error opening file: whitelist.txt " + err.Error())
 		return false
