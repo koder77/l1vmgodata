@@ -78,7 +78,7 @@ func get_free_space() (int, uint64) {
 	var i uint64
 	dmutex.Lock()
 	// check if free_index is free
-	if free_index < maxdata - 1 {
+	if free_index < maxdata-1 {
 		if !(*pdata)[free_index].used {
 			// free_index is free, increase it by 1 to point to next place
 			free_index = free_index + 1
@@ -90,7 +90,7 @@ func get_free_space() (int, uint64) {
 	// search for free place
 	for i = 0; i < maxdata; i++ {
 		if !(*pdata)[i].used {
-			if free_index < maxdata - 1 {
+			if free_index < maxdata-1 {
 				free_index = i + 1
 			}
 			dmutex.Unlock()
@@ -142,9 +142,9 @@ func try_to_allocate_more_space() int {
 	pdata = &newdata
 	maxdata = new_datasize
 
-    fmt.Println("new datasize:", maxdata)
+	fmt.Println("new datasize:", maxdata)
 
-	init_data ()
+	init_data()
 
 	// load temporary saved database
 	data_index = 0

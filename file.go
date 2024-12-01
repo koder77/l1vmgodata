@@ -24,8 +24,8 @@
 package main
 
 import (
-	"crypto/sha256"
 	"bufio"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"strconv"
@@ -181,7 +181,7 @@ func load_data(file_path string) int {
 		}
 	}
 	data_index = i
-	free_index = i   // set next free index
+	free_index = i // set next free index
 	return 0
 }
 
@@ -629,8 +629,4 @@ func check_user(file_path string, user string, password string) int {
 	}
 	// user and password don't match
 	return 1
-}	
-	
-
-
-	
+}

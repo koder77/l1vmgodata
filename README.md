@@ -1,4 +1,4 @@
-L1VMgodata 0.9.4
+L1VMgodata 0.9.5
 ================
 This is my first go project.
 This database is written for data exchange between programs.
@@ -14,9 +14,29 @@ The second is for the new web browser formular to save/load data.
 NEW: in the web form the form is always visible. also after commands are executed.
 
 NEW: TLS/SSL connections with authentication. 
-See "l1vmgodata.go" comments at top!
+To create a SSL certificate with name "cert.pem":
 
-You can connect via:
+$ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout cert.pem -out cert.pem
+
+Create a password file user and password with: "createuser" program.
+The name of the users file is: "users.config". It stores the user name and the password hashes and the salt. It has two entry lines for each user!
+
+There is a "settings.l1db" file. It stores the path for all databases. You need to set an existing path there. I did set a directory "l1vmgodata" in my "/home" directory. You have to change this!
+
+Run with TLS/SSL on:
+
+$ ./l1vmgodata 127.0.0.1 2000 tls=on off
+
+Use TLS/SSL conection:
+
+$ openssl s_client -connect 127.0.0.1:2000 -brief
+
+Login with:
+
+login :username 'password'
+
+
+You can connect via nc too:
 
 ```
 $ nc localhost 2000 2001

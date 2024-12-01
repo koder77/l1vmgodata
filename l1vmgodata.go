@@ -19,28 +19,13 @@
  */
 
 // tutorial code for tcp/ip sockets taken from: https://www.developer.com/languages/intro-socket-programming-go/
-//
-// To create a SSL certificate with name "cert.pem":
-//
-// $ openssl req -x509 -nodes -days 365 -newkey rsa:4096 -keyout cert.pem -out cert.pem
-//
-// create a password file user and password with: "createuser" program
-//
-// check TLS/SSL conection:
-// openssl s_client -connect 127.0.0.1:2000 -brief
-//
-// run with TLS/SSL on:
-// ./l1vmgodata 127.0.0.1 2000 tls=on off
-//
-// login with:
-// login :username 'password'
 
 package main
 
 import (
+	"bufio"
 	"crypto/tls"
 	"flag"
-	"bufio"
 	"fmt"
 	"net"
 	"os"
@@ -101,6 +86,7 @@ var tls_flag string = ""
 var tls_sock bool = false // set to true if TLS/SSL socket used
 
 var user_file string = "users.config"
+var database_root string = ""
 
 // ip addresses whitelist
 var ip_whitelist []string
@@ -301,7 +287,7 @@ func process_client(connection net.Conn) {
 				if err != nil {
 					fmt.Println("process_client: Error authenticate:", err.Error())
 				}
-			} else  {
+			} else {
 				fmt.Println("access denied! ")
 
 				_, err = connection.Write([]byte("ERROR\n"))
@@ -549,7 +535,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if save_data(value) != 0 {
+				if save_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -575,7 +561,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if load_data(value) != 0 {
+				if load_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -601,7 +587,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if save_data_json(value) != 0 {
+				if save_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -627,7 +613,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if load_data_json(value) != 0 {
+				if load_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error loading:", err.Error())
@@ -653,7 +639,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if save_data_csv(value) != 0 {
+				if save_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -678,7 +664,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if load_data_csv(value) != 0 {
+				if load_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -704,7 +690,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if save_data_table_csv(value) != 0 {
+				if save_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -730,7 +716,7 @@ func process_client(connection net.Conn) {
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
-				if load_data_table_csv(value) != 0 {
+				if load_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
 						fmt.Println("process_client: Error writing:", err.Error())
@@ -920,7 +906,7 @@ func process_client(connection net.Conn) {
 
 func main() {
 	fmt.Println("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.4 ...")
+	fmt.Println("l1vmgodata start 0.9.5 ...")
 
 	fmt.Println("args: ", len(os.Args))
 
@@ -953,6 +939,22 @@ func main() {
 	servdata := make([]data, maxdata) // make serverdata splice
 	pdata = &servdata
 
+	init_data()
+
+	// get configuration from: "settings.l1db"
+	if load_data("settings.l1db") != 0 {
+		fmt.Println("error: can't load config file 'settings.l1db'!")
+		init_data()
+		pdata = nil
+		os.Exit(1)
+	}
+	// get database root path
+	database_root = get_data_key("database-root\n")
+	if database_root == "" {
+		fmt.Println("can't get key ':database-root' from config file 'settings.l1db'!")
+	}
+
+	// all config stuff load, clear config data base
 	init_data()
 
 	if tls_flag == "tls=on" {
