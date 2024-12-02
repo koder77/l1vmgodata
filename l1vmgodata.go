@@ -93,6 +93,7 @@ var ip_whitelist []string
 var ip_whitelist_ind uint64 = 0
 
 var dmutex sync.Mutex // data mutex
+var server_run bool = true // set to false by "exit" command
 
 func read_ip_whitelist() bool {
 	// load database file
@@ -147,6 +148,7 @@ func run_server() {
 	fmt.Println("Waiting for client...")
 	for {
 		connection, err := server.Accept()
+		defer connection.Close()
 		if err != nil {
 			fmt.Println("Error accepting:", err.Error())
 			os.Exit(1)
@@ -154,7 +156,10 @@ func run_server() {
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
 			fmt.Println("client connected:", client_ip)
-			go process_client(connection)
+			if process_client(connection) == 1 {
+				// shutdown
+			    return
+			}
 		} else {
 			fmt.Println("access denied!", client_ip)
 		}
@@ -190,6 +195,7 @@ func run_server_tls() {
 	fmt.Println("Waiting for client...")
 	for {
 		connection, err := server.Accept()
+		defer connection.Close()
 		if err != nil {
 			fmt.Println("Error accepting:", err.Error())
 			os.Exit(1)
@@ -197,14 +203,17 @@ func run_server_tls() {
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
 			fmt.Println("client connected:", client_ip)
-			go process_client(connection)
+			if process_client(connection) == 1 {
+				// shutdown
+			    return
+			}
 		} else {
 			fmt.Println("access denied!", client_ip)
 		}
 	}
 }
 
-func process_client(connection net.Conn) {
+func process_client(connection net.Conn) int {
 	var run_loop bool = true
 	buffer := make([]byte, 4096)
 	var key string = ""
@@ -220,6 +229,8 @@ func process_client(connection net.Conn) {
 	var inputstr string = ""
 
 	var tls_auth bool = false // set to true if user password matches l1vmgodata password
+
+	var return_value int = 0;
 
 	for run_loop {
 		mLen, err := connection.Read(buffer)
@@ -251,11 +262,12 @@ func process_client(connection net.Conn) {
 			// cleanup
 			fmt.Println("cleaning up and exit!")
 			//init_data()
-
 			// server.Close()
 			// pdata = nil
 
-			os.Exit(0)
+			run_loop = false
+			return_value = 1  // exit return value, stop main program
+			continue
 		}
 
 		// check authentication
@@ -903,6 +915,8 @@ func process_client(connection net.Conn) {
 	}
 
 	connection.Close()
+
+	return (return_value)
 }
 
 func main() {
@@ -1039,8 +1053,14 @@ func main() {
 		fmt.Println("running server: TLS on!")
 		tls_sock = true
 		run_server_tls()
+		init_data()
+		pdata = nil
+		os.Exit(0)
 	} else {
 		fmt.Println("running server: normal socket!")
 		run_server()
+		init_data()
+		pdata = nil
+		os.Exit(0)
 	}
 }
