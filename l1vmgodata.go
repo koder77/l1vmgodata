@@ -250,9 +250,10 @@ func process_client(connection net.Conn) {
 
 			// cleanup
 			fmt.Println("cleaning up and exit!")
-			init_data()
-			pdata = nil
-			server.Close()
+			//init_data()
+
+			// server.Close()
+			// pdata = nil
 
 			os.Exit(0)
 		}
@@ -905,22 +906,27 @@ func process_client(connection net.Conn) {
 }
 
 func main() {
+	// var user_maxdata uint64 = 0
+	var server_host_set bool = false
+	var server_port_set bool = false
+	var tls_flag_set bool = false
+	var server_http_port_set bool = false
+
 	fmt.Println("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
 	fmt.Println("l1vmgodata start 0.9.5 ...")
 
 	fmt.Println("args: ", len(os.Args))
-
-	// check error case:
-	if len(os.Args) <= 4 {
-		fmt.Println("Arguments error! Need ip, ports, tls flag and http-port!")
-		os.Exit(1)
-	}
 
 	if len(os.Args) == 5 || len(os.Args) == 6 {
 		server_host = os.Args[1]
 		server_port = os.Args[2]
 		tls_flag = os.Args[3]
 		server_http_port = os.Args[4]
+
+		server_host_set = true
+		server_port_set = true
+		tls_flag_set = true
+		server_http_port_set = true
 	}
 	if len(os.Args) == 6 {
 		// get maxdata from command line
@@ -948,10 +954,82 @@ func main() {
 		pdata = nil
 		os.Exit(1)
 	}
+
 	// get database root path
 	database_root = get_data_key("database-root\n")
 	if database_root == "" {
 		fmt.Println("can't get key ':database-root' from config file 'settings.l1db'!")
+	}
+
+	// check for missing config
+
+	// server host
+	if server_host_set == false {
+		server_host = get_data_key("host\n")
+		if server_host == "" {
+			fmt.Println("can't get key ':host' from config file 'settings.l1db'!")
+		} else {
+			server_host_set = true
+		}
+	}
+
+	// server port
+	if server_port_set == false {
+		server_port = get_data_key("port\n")
+		if server_port == "" {
+			fmt.Println("can't get key ':port' from config file 'settings.l1db'!")
+		} else {
+			server_port_set = true
+		}
+	}
+
+	// tls flag
+	if tls_flag_set == false {
+		tls_flag = get_data_key("tls\n")
+		if tls_flag == "" {
+			fmt.Println("can't get key ':tls' from config file 'settings.l1db'!")
+		} else {
+			tls_flag_set = true
+		}
+	}
+
+	// server http port flag
+	if server_http_port_set == false {
+		server_http_port = get_data_key("http-port\n")
+		if server_http_port == "" {
+			fmt.Println("can't get key ':http-port' from config file 'settings.l1db'!")
+		} else {
+			server_http_port_set = true
+		}
+	}
+
+	// check if all needed config is set
+	if server_host_set == false {
+		fmt.Println("Error: no server host set!")
+		init_data()
+		pdata = nil
+		os.Exit(1)
+	}
+
+	if server_port_set == false {
+		fmt.Println("Error: no server port set!")
+		init_data()
+		pdata = nil
+		os.Exit(1)
+	}
+
+	if tls_flag_set == false {
+		fmt.Println("Error: no tls config set!")
+		init_data()
+		pdata = nil
+		os.Exit(1)
+	}
+
+	if server_http_port_set == false {
+		fmt.Println("Error: no http port config set!")
+		init_data()
+		pdata = nil
+		os.Exit(1)
 	}
 
 	// all config stuff load, clear config data base
