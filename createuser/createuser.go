@@ -30,7 +30,7 @@ func main() {
 	var salt string = ""
 	var role_set = 0
 
-	fmt.Println("createuser <username> <password> <role: normal-user | admin>")
+	fmt.Println("createuser <username> <password> <role: normal-user | read-only | admin>")
 
 	fmt.Println("args: ", len(os.Args))
 
@@ -48,12 +48,12 @@ func main() {
 	password := os.Args[2]
 	role := os.Args[3]
 
-	if role == "normal-user" || role == "admin" {
+	if role == "normal-user" || role == "read-only" || role == "admin" {
 		role_set = 1
 	}
 
 	if role_set == 0 {
-		fmt.Println("Error: role must be one of: 'normal-user' or 'admin' !")
+		fmt.Println("Error: role must be one of: 'normal-user', 'read-only' or 'admin' !")
 		os.Exit(1)
 	}
 

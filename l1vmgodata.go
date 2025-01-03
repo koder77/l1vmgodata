@@ -323,6 +323,14 @@ func process_client(connection net.Conn) int {
 		// extreme speedup over store data!!!
 		match = strings.HasPrefix(inputstr, STORE_DATA_NEW)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// store key/value pair
 			// try to store data
 			if check_data(string(buffer[:mLen])) != 0 {
@@ -357,6 +365,14 @@ func process_client(connection net.Conn) int {
 		// store data
 		match = strings.HasPrefix(inputstr, STORE_DATA)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// store key/value pair
 			// try to store data
 			if check_data(string(buffer[:mLen])) != 0 {
@@ -454,6 +470,14 @@ func process_client(connection net.Conn) int {
 		// remove data, send value
 		match = strings.HasPrefix(inputstr, REMOVE_DATA)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// try to find matching key
 			key = split_key(string(buffer[:mLen]))
 			if key != "" {
@@ -547,6 +571,14 @@ func process_client(connection net.Conn) int {
 		// check save
 		match = strings.HasPrefix(inputstr, SAVE_DATA)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
@@ -599,6 +631,14 @@ func process_client(connection net.Conn) int {
 		// check save
 		match = strings.HasPrefix(inputstr, SAVE_DATA_JSON)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
@@ -651,6 +691,14 @@ func process_client(connection net.Conn) int {
 		// check save CSV
 		match = strings.HasPrefix(inputstr, SAVE_DATA_CSV)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
@@ -702,6 +750,14 @@ func process_client(connection net.Conn) int {
 		// check save table CSV
 		match = strings.HasPrefix(inputstr, SAVE_DATA_TABLE_CSV)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			// try to find matching path name
 			value = split_value(string(buffer[:mLen]))
 			if value != "" {
@@ -792,6 +848,14 @@ func process_client(connection net.Conn) int {
 
 		match = strings.HasPrefix(inputstr, SET_LINK)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
@@ -825,6 +889,14 @@ func process_client(connection net.Conn) int {
 
 		match = strings.HasPrefix(inputstr, REMOVE_LINK)
 		if match {
+			if user_role == "read-only" {
+				_, err = connection.Write([]byte("ERROR\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
+			}
+
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
