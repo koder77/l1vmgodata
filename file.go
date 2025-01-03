@@ -674,6 +674,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 		} else if parse_loop == 1 {
 			// get first line data: username and password hash
 			user_read, password_hash = split_data_csv(line)
+
 			if user_read != user_list {
 				// user string no match!
 				fmt.Printf("check_user: user: %s, no username match in config!\n", user_list)
