@@ -672,7 +672,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 			user_role = fmt.Sprintf("%s", user_role[1:])
 			parse_loop = 1
 		} else if parse_loop == 1 {
-			// get first line data: username and password hash
+			// get second line data: username and password hash
 			user_read, password_hash = split_data_csv(line)
 
 			if user_read != user_list {
@@ -683,7 +683,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 			password_hash = fmt.Sprintf("%s", password_hash[1:])
 			parse_loop = 2
 		} else if parse_loop == 2 {
-			// read second line: salt
+			// read third line: salt
 			line = scanner.Text()
 			user_read, salt = split_data_csv(line)
 
