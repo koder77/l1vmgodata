@@ -644,9 +644,10 @@ func load_data_table_csv(file_path string) int {
 }
 
 // check user name in password file
-func check_user(file_path string, user string, password string) int {
+func check_user(file_path string, user string, password string) (int, string) {
 	// load database file
 	var user_list string
+	var user_role string
 	var password_hash string
 	var password_salt string
 	var salt string = ""
@@ -655,7 +656,7 @@ func check_user(file_path string, user string, password string) int {
 	file, err := os.Open(file_path)
 	if err != nil {
 		fmt.Println("Error opening user file: " + file_path + " " + err.Error())
-		return 1
+		return 1, ""
 	}
 	// remember to close the file
 	defer file.Close()
@@ -665,11 +666,16 @@ func check_user(file_path string, user string, password string) int {
 		line := scanner.Text()
 
 		if parse_loop == 0 {
+			// get first line data: username and user role
+			user_list, user_role = split_data_csv(line)
+			user_role = fmt.Sprintf("%s", user_role[1:])
+			parse_loop = 1
+		} else if parse_loop == 1 {
 			// get first line data: username and password hash
 			user_list, password_hash = split_data_csv(line)
 			password_hash = fmt.Sprintf("%s", password_hash[1:])
-			parse_loop = 1
-		} else {
+			parse_loop = 2
+		} else if parse_loop == 2 {
 			// read second line: salt
 			line = scanner.Text()
 			_, salt = split_data_csv(line)
@@ -683,12 +689,12 @@ func check_user(file_path string, user string, password string) int {
 
 				comp := strings.Compare(password_hash, password_file_string)
 				if comp == 0 {
-					return 0
+					return 0, user_role
 				}
 			}
 			parse_loop = 0
 		}
 	}
 	// user and password don't match
-	return 1
+	return 1, ""
 }

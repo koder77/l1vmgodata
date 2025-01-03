@@ -28,14 +28,15 @@
 
 func main() {
 	var salt string = ""
+	var role_set = 0
 
-	fmt.Println("createuser <username> <password>")
+	fmt.Println("createuser <username> <password> <role: normal-user | admin>")
 
 	fmt.Println("args: ", len(os.Args))
 
 	// check error case:
-	if len(os.Args) <= 2 {
-		fmt.Println("Arguments error! Need username and password!")
+	if len(os.Args) <= 3 {
+		fmt.Println("Arguments error! Need username, password and role!")
 		os.Exit(1)
 	}
 
@@ -45,6 +46,16 @@ func main() {
 
 	user := os.Args[1]
 	password := os.Args[2]
+	role := os.Args[3]
+
+	if role == "normal-user" || role == "admin" {
+		role_set = 1
+	}
+
+	if role_set == 0 {
+		fmt.Println("Error: role must be one of: 'normal-user' or 'admin' !")
+		os.Exit(1)
+	}
 
 	password = password + salt
 
@@ -52,6 +63,7 @@ func main() {
 	password_string := fmt.Sprintf("%s", sha256.Sum256([]byte(password)))
 
     fmt.Println("insert this into the users.config file:")
+	fmt.Printf("%v, %s\n", user, role)
 	fmt.Printf("%v, %x\n", user, password_string)
 	fmt.Printf("%v, %s\n", user, salt)
 

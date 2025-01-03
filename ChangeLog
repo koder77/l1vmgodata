@@ -1,3 +1,9 @@
+L1VMgodata - (0.9.5)
+    Added user roles: "normal-user" and "admin".
+    Only the admin can erase a database in memory!
+
+-- Stefan Pietzonke <jay-t@gmx.net> Fri 03 Jan 20:58 +0200
+
 L1VMgodata - (0.9.3)
     Removed the regex command search and use HasPrefix now.
 

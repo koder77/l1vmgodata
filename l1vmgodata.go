@@ -229,7 +229,8 @@ func process_client(connection net.Conn) int {
 	var inputstr string = ""
 
 	var tls_auth bool = false // set to true if user password matches l1vmgodata password
-
+	var user_role string = "normal-user"
+	var user_ret = 0
 	var return_value int = 0;
 
 	for run_loop {
@@ -292,7 +293,8 @@ func process_client(connection net.Conn) int {
 			}
 
 			// hash value user password
-			if check_user(user_file, key, value) == 0 {
+			user_ret, user_role = check_user(user_file, key, value)
+			if user_ret == 0 {
 				tls_auth = true
 				fmt.Println("ok!")
 
@@ -750,14 +752,28 @@ func process_client(connection net.Conn) int {
 		}
 
 		// check erase all data
+		// user role check
 		match = strings.HasPrefix(inputstr, ERASE_DATA)
 		if match {
-			init_data()
-			_, err = connection.Write([]byte("OK\n"))
-			if err != nil {
-				fmt.Println("process_client: Error writing:", err.Error())
+			// user role check
+
+			if user_role == "admin" {
+				match = strings.HasPrefix(inputstr, ERASE_DATA)
+				if match {
+					init_data()
+					_, err = connection.Write([]byte("OK\n"))
+					if err != nil {
+						fmt.Println("process_client: Error writing:", err.Error())
+					}
+					continue
+				}
+			} else {
+				_, err = connection.Write([]byte("ERROR not admin user! Erasing denied!\n"))
+				if err != nil {
+					fmt.Println("process_client: Error writing:", err.Error())
+				}
+				continue
 			}
-			continue
 		}
 
 		// check get free elements
