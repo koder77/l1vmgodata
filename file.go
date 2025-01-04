@@ -644,6 +644,13 @@ func load_data_table_csv(file_path string) int {
 }
 
 // check user name in password file
+// data base commands
+const (
+	USER_NORMAL            = "normal-user"
+	USER_READ_ONLY         = "read-only"
+	USER_ADMIN             = "admin"
+)
+
 func check_user(file_path string, user string, password string) (int, string) {
 	// load database file
 	var user_list string = ""
@@ -653,6 +660,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 	var password_salt string = ""
 	var salt string = ""
 	var parse_loop = 0
+	var user_valid = 0
 
 	file, err := os.Open(file_path)
 	if err != nil {
@@ -670,6 +678,14 @@ func check_user(file_path string, user string, password string) (int, string) {
 			// get first line data: username and user role
 			user_list, user_role = split_data_csv(line)
 			user_role = fmt.Sprintf("%s", user_role[1:])
+
+			if user_role == USER_NORMAL || user_role == USER_READ_ONLY || user_role == USER_ADMIN {
+				user_valid = 1
+			}
+			if user_valid == 0 {
+				return 1, ""
+			}
+
 			parse_loop = 1
 		} else if parse_loop == 1 {
 			// get second line data: username and password hash
@@ -678,7 +694,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 			if user_read != user_list {
 				// user string no match!
 				fmt.Printf("check_user: user: %s, no username match in config!\n", user_list)
-				return 1, user_role
+				return 1, ""
 			}
 			password_hash = fmt.Sprintf("%s", password_hash[1:])
 			parse_loop = 2
@@ -690,7 +706,7 @@ func check_user(file_path string, user string, password string) (int, string) {
 			if user_read != user_list {
 				// user string no match!
 				fmt.Printf("check_user: user: %s, no username match in config!\n", user_list)
-				return 1, user_role
+				return 1, ""
 			}
 
 			salt = fmt.Sprintf("%s", salt[1:])
