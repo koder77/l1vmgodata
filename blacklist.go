@@ -32,7 +32,7 @@ func check_blacklist(ip string) bool {
 
 	if blacklist_ip_ind > 0 {
 		dmutex.Lock()
-		for i = 0; i <= blacklist_ip_ind; i++ {
+		for i = 0; i < blacklist_ip_ind; i++ {
 			if blacklist_ip[i] == ip {
 				dmutex.Unlock()
 				return true
