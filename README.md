@@ -1,4 +1,4 @@
-L1VMgodata 0.9.5
+L1VMgodata 0.9.6
 ================
 This is my first go project.
 This database is written for data exchange between programs.
@@ -12,6 +12,8 @@ NEW: now you have to set two ports. The first one is for direct access with a pr
 The second is for the new web browser formular to save/load data.
 
 NEW: in the web form the form is always visible. also after commands are executed.
+
+Added blacklisting IPs if there are more than 3 failed logins via TLS/SSL.
 
 NEW: TLS/SSL connections with authentication. 
 To create a SSL certificate with name "cert.pem":
