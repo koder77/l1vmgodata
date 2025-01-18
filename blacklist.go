@@ -20,12 +20,10 @@
 
 package main
 
-func set_blacklist_ip(max_blacklist_ip uint64, ip string) {
+func set_blacklist_ip(ip string) {
 	dmutex.Lock()
-	if blacklist_ip_ind < max_blacklist_ip {
-		blacklist_ip[blacklist_ip_ind] = ip
-		blacklist_ip_ind++
-	}
+	blacklist_ip = append (blacklist_ip, ip)
+	blacklist_ip_ind++
 	dmutex.Unlock()
 }
 

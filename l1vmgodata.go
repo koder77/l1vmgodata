@@ -65,8 +65,6 @@ const (
 	GET_LINK_NAME         = "get-link-name"
 	EXIT                  = "exit"
 	AUTH                  = "login"
-
-	MAX_BLACKLIST_IP = 256
 )
 
 type data struct {
@@ -78,7 +76,7 @@ type data struct {
 
 // for blacklist.go, store blacklisted IP addresses
 // after 3 failed logins put IP into blacklist for banning
-var blacklist_ip [MAX_BLACKLIST_IP]string
+var blacklist_ip []string
 var blacklist_ip_ind uint64 = 0
 
 var maxdata uint64 = 10000 // max data number
@@ -332,7 +330,7 @@ func process_client(connection net.Conn) int {
 					// exit run loop, authentication failed
 					// set ip in blacklist
 					client_ip = get_client_ip(connection.RemoteAddr().String())
-					set_blacklist_ip(MAX_BLACKLIST_IP, client_ip)
+					set_blacklist_ip(client_ip)
 					run_loop = false
 
 					fmt.Println("process_client: Error too many denied logins. IP:", client_ip, "banned!")
