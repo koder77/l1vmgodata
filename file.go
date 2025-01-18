@@ -646,9 +646,9 @@ func load_data_table_csv(file_path string) int {
 // check user name in password file
 // user roles
 const (
-	USER_NORMAL            = "normal-user"
-	USER_READ_ONLY         = "read-only"
-	USER_ADMIN             = "admin"
+	USER_NORMAL    = "normal-user"
+	USER_READ_ONLY = "read-only"
+	USER_ADMIN     = "admin"
 )
 
 func check_user(file_path string, user string, password string) (int, string) {

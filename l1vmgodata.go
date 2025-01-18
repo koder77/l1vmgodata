@@ -65,6 +65,8 @@ const (
 	GET_LINK_NAME         = "get-link-name"
 	EXIT                  = "exit"
 	AUTH                  = "login"
+
+	MAX_BLACKLIST_IP = 256
 )
 
 type data struct {
@@ -73,6 +75,11 @@ type data struct {
 	value string
 	links []uint64
 }
+
+// for blacklist.go, store blacklisted IP addresses
+// after 3 failed logins put IP into blacklist for banning
+var blacklist_ip [MAX_BLACKLIST_IP]string
+var blacklist_ip_ind uint64 = 0
 
 var maxdata uint64 = 10000 // max data number
 var data_index uint64 = 0  // for loading multiple databases into one big database
@@ -92,7 +99,7 @@ var database_root string = ""
 var ip_whitelist []string
 var ip_whitelist_ind uint64 = 0
 
-var dmutex sync.Mutex // data mutex
+var dmutex sync.Mutex      // data mutex
 var server_run bool = true // set to false by "exit" command
 
 func read_ip_whitelist() bool {
@@ -155,10 +162,14 @@ func run_server() {
 		}
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
-			fmt.Println("client connected:", client_ip)
-			if process_client(connection) == 1 {
-				// shutdown
-			    return
+			if check_blacklist(client_ip) {
+				fmt.Println("Error: IP:", client_ip, "is blacklisted! Connection blocked!")
+			} else {
+				fmt.Println("client connected:", client_ip)
+				if process_client(connection) == 1 {
+					// shutdown
+					return
+				}
 			}
 		} else {
 			fmt.Println("access denied!", client_ip)
@@ -202,10 +213,14 @@ func run_server_tls() {
 		}
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
-			fmt.Println("client connected:", client_ip)
-			if process_client(connection) == 1 {
-				// shutdown
-			    return
+			if check_blacklist(client_ip) {
+				fmt.Println("Error: IP:", client_ip, "is blacklisted! Connection blocked!")
+			} else {
+				fmt.Println("client connected:", client_ip)
+				if process_client(connection) == 1 {
+					// shutdown
+					return
+				}
 			}
 		} else {
 			fmt.Println("access denied!", client_ip)
@@ -231,7 +246,10 @@ func process_client(connection net.Conn) int {
 	var tls_auth bool = false // set to true if user password matches l1vmgodata password
 	var user_role string = "normal-user"
 	var user_ret = 0
-	var return_value int = 0;
+	var return_value int = 0
+
+	var authenticate_retries int = 1
+	var client_ip string
 
 	for run_loop {
 		mLen, err := connection.Read(buffer)
@@ -267,7 +285,7 @@ func process_client(connection net.Conn) int {
 			// pdata = nil
 
 			run_loop = false
-			return_value = 1  // exit return value, stop main program
+			return_value = 1 // exit return value, stop main program
 			continue
 		}
 
@@ -309,6 +327,17 @@ func process_client(connection net.Conn) int {
 				if err != nil {
 					fmt.Println("process_client: Error authenticate:", err.Error())
 				}
+
+				if authenticate_retries == 3 {
+					// exit run loop, authentication failed
+					// set ip in blacklist
+					client_ip = get_client_ip(connection.RemoteAddr().String())
+					set_blacklist_ip(MAX_BLACKLIST_IP, client_ip)
+					run_loop = false
+
+					fmt.Println("process_client: Error too many denied logins. IP:", client_ip, "banned!")
+				}
+				authenticate_retries++
 			}
 			continue
 		}
@@ -1015,7 +1044,7 @@ func main() {
 	var server_http_port_set bool = false
 
 	fmt.Println("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.5 ...")
+	fmt.Println("l1vmgodata start 0.9.6 ...")
 
 	fmt.Println("args: ", len(os.Args))
 

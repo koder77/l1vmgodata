@@ -1,8 +1,7 @@
-L1VMgodata - (0.9.5)
-    Added user roles: "normal-user" and "admin".
-    Only the admin can erase a database in memory!
+L1VMgodata - (0.9.6)
+  Added blacklist IP to ban after three failed logins.
 
--- Stefan Pietzonke <jay-t@gmx.net> Fri 03 Jan 20:58 +0200
+-- Stefan Pietzonke <jay-t@gmx.net> Sat 18 Jan 15:18 +0100
 
 L1VMgodata - (0.9.3)
     Removed the regex command search and use HasPrefix now.
