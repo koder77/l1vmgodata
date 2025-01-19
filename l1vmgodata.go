@@ -274,16 +274,20 @@ func process_client(connection net.Conn) int {
 		// check exit
 		match = strings.HasPrefix(inputstr, EXIT)
 		if match {
-			_, err = connection.Write([]byte("OK\n"))
+			if user_role == "admin" {
+				_, err = connection.Write([]byte("OK\n"))
 
-			// cleanup
-			fmt.Println("cleaning up and exit!")
-			//init_data()
-			// server.Close()
-			// pdata = nil
+				// cleanup
+				fmt.Println("cleaning up and exit!")
+				//init_data()
+				// server.Close()
+				// pdata = nil
 
-			run_loop = false
-			return_value = 1 // exit return value, stop main program
+				run_loop = false
+				return_value = 1 // exit return value, stop main program
+			} else {
+				_, err = connection.Write([]byte("ERROR\n"))
+			}
 			continue
 		}
 
@@ -296,7 +300,7 @@ func process_client(connection net.Conn) int {
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					fmt.Println("process_client: Error get key:", err.Error())
 				}
 			}
 
@@ -304,7 +308,7 @@ func process_client(connection net.Conn) int {
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					fmt.Println("process_client: Error get value:", err.Error())
 				}
 			}
 
