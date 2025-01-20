@@ -104,7 +104,7 @@ func read_ip_whitelist() bool {
 	// load database file
 	file, err := os.Open("whitelist.config")
 	if err != nil {
-		fmt.Println("Error opening file: whitelist.txt " + err.Error())
+		fmt.Println("Error opening file: whitelist.config " + err.Error())
 		return false
 	}
 	// remember to close the file

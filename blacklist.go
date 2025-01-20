@@ -54,7 +54,7 @@ func read_ip_blacklist() bool {
 	// load database file
 	file, err := os.Open("blacklist.config")
 	if err != nil {
-		fmt.Println("Error opening file: blacklist.txt " + err.Error())
+		fmt.Println("Error opening file: blacklist.config " + err.Error())
 		return false
 	}
 	// remember to close the file
@@ -81,7 +81,7 @@ func write_ip_blacklist() bool {
 	// save database file
 	file, err :=  os.Create("blacklist.config")
 	if err != nil {
-		fmt.Println("Error opening file: blacklist.txt " + err.Error())
+		fmt.Println("Error opening file: blacklist.config " + err.Error())
 		return false
 	}
 	// remember to close the file
