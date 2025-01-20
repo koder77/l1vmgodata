@@ -28,7 +28,7 @@ import (
 
 // config file
 const (
-	BLACKLIST = "blacklist.config"
+	BLACKLIST = "config/blacklist.config"
 )
 
 func set_blacklist_ip(ip string) {

@@ -69,8 +69,9 @@ const (
 
 // config files
 const (
-	USER_FILE             = "users.config"
-	WHITELIST             = "whitelist.config"
+	USER_FILE             = "config/users.config"
+	WHITELIST             = "config/whitelist.config"
+	SETTINGS              = "config/settings.l1db"
 )
 
 type data struct {
@@ -1100,7 +1101,7 @@ func main() {
 	init_data()
 
 	// get configuration from: "settings.l1db"
-	if load_data("settings.l1db") != 0 {
+	if load_data(SETTINGS) != 0 {
 		fmt.Println("error: can't load config file 'settings.l1db'!")
 		init_data()
 		pdata = nil
