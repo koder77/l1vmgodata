@@ -26,6 +26,11 @@ import (
 		"os"
 )
 
+// config file
+const (
+	BLACKLIST = "blacklist.config"
+)
+
 func set_blacklist_ip(ip string) {
 	dmutex.Lock()
 	blacklist_ip = append (blacklist_ip, ip)
@@ -52,9 +57,9 @@ func check_blacklist(ip string) bool {
 
 func read_ip_blacklist() bool {
 	// load database file
-	file, err := os.Open("blacklist.config")
+	file, err := os.Open(BLACKLIST)
 	if err != nil {
-		fmt.Println("Error opening file: blacklist.config " + err.Error())
+		fmt.Println("Error opening file: " + BLACKLIST + " " + err.Error())
 		return false
 	}
 	// remember to close the file
@@ -79,9 +84,9 @@ func read_ip_blacklist() bool {
 func write_ip_blacklist() bool {
 	var i uint64 = 0
 	// save database file
-	file, err :=  os.Create("blacklist.config")
+	file, err :=  os.Create(BLACKLIST)
 	if err != nil {
-		fmt.Println("Error opening file: blacklist.config " + err.Error())
+		fmt.Println("Error opening file: " + BLACKLIST + " " + err.Error())
 		return false
 	}
 	// remember to close the file

@@ -67,6 +67,12 @@ const (
 	AUTH                  = "login"
 )
 
+// config files
+const (
+	USER_FILE             = "users.config"
+	WHITELIST             = "whitelist.config"
+)
+
 type data struct {
 	used  bool
 	key   string
@@ -85,7 +91,7 @@ var pdata *[]data
 var tls_flag string = ""
 var tls_sock bool = false // set to true if TLS/SSL socket used
 
-var user_file string = "users.config"
+var user_file string = USER_FILE
 var database_root string = ""
 
 // ip addresses whitelist
@@ -102,7 +108,7 @@ var server_run bool = true // set to false by "exit" command
 
 func read_ip_whitelist() bool {
 	// load database file
-	file, err := os.Open("whitelist.config")
+	file, err := os.Open(WHITELIST)
 	if err != nil {
 		fmt.Println("Error opening file: whitelist.config " + err.Error())
 		return false
