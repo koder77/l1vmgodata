@@ -74,11 +74,6 @@ type data struct {
 	links []uint64
 }
 
-// for blacklist.go, store blacklisted IP addresses
-// after 3 failed logins put IP into blacklist for banning
-var blacklist_ip []string
-var blacklist_ip_ind uint64 = 0
-
 var maxdata uint64 = 10000 // max data number
 var data_index uint64 = 0  // for loading multiple databases into one big database
 var free_index uint64 = 0  // next index of free data entry
@@ -96,6 +91,11 @@ var database_root string = ""
 // ip addresses whitelist
 var ip_whitelist []string
 var ip_whitelist_ind uint64 = 0
+
+// for blacklist.go, store blacklisted IP addresses
+// after 3 failed logins put IP into blacklist for banning
+var blacklist_ip []string
+var blacklist_ip_ind uint64 = 0
 
 var dmutex sync.Mutex      // data mutex
 var server_run bool = true // set to false by "exit" command
@@ -341,6 +341,9 @@ func process_client(connection net.Conn) int {
 					// set ip in blacklist
 					client_ip = get_client_ip(connection.RemoteAddr().String())
 					set_blacklist_ip(client_ip)
+					if !write_ip_blacklist() {
+						fmt.Println("ERROR: saving blacklist file!")
+					}
 					run_loop = false
 
 					fmt.Println("process_client: Error too many denied logins. IP:", client_ip, "banned!")
@@ -1077,6 +1080,10 @@ func main() {
 	}
 
 	if !read_ip_whitelist() {
+		os.Exit(1)
+	}
+
+	if !read_ip_blacklist() {
 		os.Exit(1)
 	}
 
