@@ -1,0 +1,11 @@
+l1vmgodata database
+:database-root "/home/stefan/l1vmgodata/"
+:link '0'
+:host "127.0.0.1"
+:link '0'
+:port "2000"
+:link '0'
+:tls "tls-on"
+:link '0'
+:http-port "off"
+:link '0'
