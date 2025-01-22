@@ -176,7 +176,7 @@ func run_server() {
 			if check_blacklist(client_ip) {
 				print_message("Error: IP:" + client_ip + "is blacklisted! Connection blocked!")
 			} else {
-				print_message("client connected:" + client_ip)
+				print_message("client connected: " + client_ip)
 				if process_client(connection) == 1 {
 					// shutdown
 					return
@@ -227,7 +227,7 @@ func run_server_tls() {
 			if check_blacklist(client_ip) {
 				print_message("Error: IP:" + client_ip + "is blacklisted! Connection blocked!")
 			} else {
-				print_message("client connected:" + client_ip)
+				print_message("client connected: " + client_ip)
 				if process_client(connection) == 1 {
 					// shutdown
 					return
@@ -1100,7 +1100,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("allocating ", maxdata, " space for data")
+	fmt.Println("allocating ", maxdata , " space for data")
 
 	servdata := make([]data, maxdata) // make serverdata splice
 	pdata = &servdata
