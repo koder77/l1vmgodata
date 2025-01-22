@@ -21,9 +21,9 @@
 package main
 
 import (
-		"bufio"
-		"fmt"
-		"os"
+	"bufio"
+	"fmt"
+	"os"
 )
 
 // config file
@@ -33,7 +33,7 @@ const (
 
 func set_blacklist_ip(ip string) {
 	dmutex.Lock()
-	blacklist_ip = append (blacklist_ip, ip)
+	blacklist_ip = append(blacklist_ip, ip)
 	blacklist_ip_ind++
 	dmutex.Unlock()
 }
@@ -84,7 +84,7 @@ func read_ip_blacklist() bool {
 func write_ip_blacklist() bool {
 	var i uint64 = 0
 	// save database file
-	file, err :=  os.Create(BLACKLIST)
+	file, err := os.Create(BLACKLIST)
 	if err != nil {
 		fmt.Println("Error opening file: " + BLACKLIST + " " + err.Error())
 		return false
@@ -97,7 +97,7 @@ func write_ip_blacklist() bool {
 		_, err = file.WriteString(blacklist_ip[i] + "\n")
 		if err != nil {
 			fmt.Println("Error writing blacklist file:", err.Error())
-		    dmutex.Unlock()
+			dmutex.Unlock()
 			return false
 		}
 	}

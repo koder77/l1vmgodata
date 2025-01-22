@@ -32,6 +32,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // socket
@@ -69,9 +70,9 @@ const (
 
 // config files
 const (
-	USER_FILE             = "config/users.config"
-	WHITELIST             = "config/whitelist.config"
-	SETTINGS              = "config/settings.l1db"
+	USER_FILE = "config/users.config"
+	WHITELIST = "config/whitelist.config"
+	SETTINGS  = "config/settings.l1db"
 )
 
 type data struct {
@@ -107,11 +108,16 @@ var blacklist_ip_ind uint64 = 0
 var dmutex sync.Mutex      // data mutex
 var server_run bool = true // set to false by "exit" command
 
+func print_message(logtext string) {
+	t := time.Now()
+	fmt.Println(t.Format(time.RFC1123) + " " + logtext)
+}
+
 func read_ip_whitelist() bool {
 	// load database file
 	file, err := os.Open(WHITELIST)
 	if err != nil {
-		fmt.Println("Error opening file: "+ WHITELIST + " " + err.Error())
+		print_message("Error opening file: " + WHITELIST + " " + err.Error())
 		return false
 	}
 	// remember to close the file
@@ -124,7 +130,7 @@ func read_ip_whitelist() bool {
 		// store ip
 		if len(line) >= 2 {
 			ip_whitelist = append(ip_whitelist, line)
-			fmt.Println("whitelist:", ip_whitelist[ip_whitelist_ind])
+			print_message("whitelist:" + ip_whitelist[ip_whitelist_ind])
 			ip_whitelist_ind++
 		}
 	}
@@ -146,38 +152,38 @@ func check_whitelist(ip string) bool {
 func run_server() {
 	var client_ip string
 
-	fmt.Println("run_server...")
+	print_message("run_server...")
 	if server_http_port != "off" {
 		go handle_http_request()
 	}
 	server, err := net.Listen(SERVER_TYPE, server_host+":"+server_port)
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
+		print_message("Error listening:" + err.Error())
 		os.Exit(1)
 	}
 	defer server.Close()
-	fmt.Println("Listening on " + server_host + ":" + server_port)
-	fmt.Println("Waiting for client...")
+	print_message("Listening on " + server_host + ":" + server_port)
+	print_message("Waiting for client...")
 	for {
 		connection, err := server.Accept()
 		defer connection.Close()
 		if err != nil {
-			fmt.Println("Error accepting:", err.Error())
+			print_message("Error accepting:" + err.Error())
 			os.Exit(1)
 		}
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
 			if check_blacklist(client_ip) {
-				fmt.Println("Error: IP:", client_ip, "is blacklisted! Connection blocked!")
+				print_message("Error: IP:" + client_ip + "is blacklisted! Connection blocked!")
 			} else {
-				fmt.Println("client connected:", client_ip)
+				print_message("client connected:" + client_ip)
 				if process_client(connection) == 1 {
 					// shutdown
 					return
 				}
 			}
 		} else {
-			fmt.Println("access denied!", client_ip)
+			print_message("access denied!" + client_ip)
 		}
 	}
 }
@@ -185,7 +191,7 @@ func run_server() {
 func run_server_tls() {
 	var client_ip string
 
-	fmt.Println("run_server...")
+	print_message("run_server...")
 	if server_http_port != "off" {
 		go handle_http_request()
 	}
@@ -196,39 +202,39 @@ func run_server_tls() {
 
 	cert, err := tls.LoadX509KeyPair(*certFile, *keyFile)
 	if err != nil {
-		fmt.Println("Error on TLS certificate: ", err.Error())
+		print_message("Error on TLS certificate: " + err.Error())
 		os.Exit(1)
 	}
 	config := &tls.Config{Certificates: []tls.Certificate{cert}}
 
 	server, err := tls.Listen(SERVER_TYPE, server_host+":"+server_port, config)
 	if err != nil {
-		fmt.Println("Error listening:", err.Error())
+		print_message("Error listening:" + err.Error())
 		os.Exit(1)
 	}
 	defer server.Close()
-	fmt.Println("Listening on " + server_host + ":" + server_port)
-	fmt.Println("Waiting for client...")
+	print_message("Listening on " + server_host + ":" + server_port)
+	print_message("Waiting for client...")
 	for {
 		connection, err := server.Accept()
 		defer connection.Close()
 		if err != nil {
-			fmt.Println("Error accepting:", err.Error())
+			print_message("Error accepting:" + err.Error())
 			os.Exit(1)
 		}
 		client_ip = get_client_ip(connection.RemoteAddr().String())
 		if check_whitelist(client_ip) {
 			if check_blacklist(client_ip) {
-				fmt.Println("Error: IP:", client_ip, "is blacklisted! Connection blocked!")
+				print_message("Error: IP:" + client_ip + "is blacklisted! Connection blocked!")
 			} else {
-				fmt.Println("client connected:", client_ip)
+				print_message("client connected:" + client_ip)
 				if process_client(connection) == 1 {
 					// shutdown
 					return
 				}
 			}
 		} else {
-			fmt.Println("access denied!", client_ip)
+			print_message("access denied!" + client_ip)
 		}
 	}
 }
@@ -259,7 +265,7 @@ func process_client(connection net.Conn) int {
 	for run_loop {
 		mLen, err := connection.Read(buffer)
 		if err != nil {
-			fmt.Println("process_client: Error reading:", err.Error())
+			print_message("process_client: Error reading:" + err.Error())
 			// end for loop
 			run_loop = false
 			continue
@@ -284,11 +290,11 @@ func process_client(connection net.Conn) int {
 			if user_role == "admin" {
 				_, err = connection.Write([]byte("OK\n"))
 				if err != nil {
-					fmt.Println("process_client: Error sending OK:", err.Error())
+					print_message("process_client: Error sending OK:" + err.Error())
 				}
 
 				// cleanup
-				fmt.Println("cleaning up and exit!")
+				print_message("cleaning up and exit!")
 				//init_data()
 				// server.Close()
 				// pdata = nil
@@ -298,7 +304,7 @@ func process_client(connection net.Conn) int {
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error sending ERROR:", err.Error())
+					print_message("process_client: Error sending ERROR:" + err.Error())
 				}
 			}
 			continue
@@ -307,13 +313,13 @@ func process_client(connection net.Conn) int {
 		// check authentication
 		match = strings.HasPrefix(inputstr, AUTH)
 		if match {
-			fmt.Print("got login... ")
+			print_message("got login... ")
 
 			key = split_key(string(buffer[:mLen]))
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get key:", err.Error())
+					print_message("process_client: Error get key:" + err.Error())
 				}
 			}
 
@@ -321,7 +327,7 @@ func process_client(connection net.Conn) int {
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get value:", err.Error())
+					print_message("process_client: Error get value:" + err.Error())
 				}
 			}
 
@@ -333,14 +339,14 @@ func process_client(connection net.Conn) int {
 
 				_, err = connection.Write([]byte("OK\n"))
 				if err != nil {
-					fmt.Println("process_client: Error authenticate:", err.Error())
+					print_message("process_client: Error authenticate:" + err.Error())
 				}
 			} else {
-				fmt.Println("access denied! ")
+				print_message("access denied! ")
 
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error authenticate:", err.Error())
+					print_message("process_client: Error authenticate:" + err.Error())
 				}
 
 				if authenticate_retries == 3 {
@@ -349,11 +355,11 @@ func process_client(connection net.Conn) int {
 					client_ip = get_client_ip(connection.RemoteAddr().String())
 					set_blacklist_ip(client_ip)
 					if !write_ip_blacklist() {
-						fmt.Println("ERROR: saving blacklist file!")
+						print_message("ERROR: saving blacklist file!")
 					}
 					run_loop = false
 
-					fmt.Println("process_client: Error too many denied logins. IP:", client_ip, "banned!")
+					print_message("process_client: Error too many denied logins. IP:" + client_ip + "banned!")
 				}
 				authenticate_retries++
 			}
@@ -373,7 +379,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -383,7 +389,7 @@ func process_client(connection net.Conn) int {
 			if check_data(string(buffer[:mLen])) != 0 {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -392,18 +398,18 @@ func process_client(connection net.Conn) int {
 				if store_data_new(key, value) == 0 {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -415,7 +421,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -425,7 +431,7 @@ func process_client(connection net.Conn) int {
 			if check_data(string(buffer[:mLen])) != 0 {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -434,18 +440,18 @@ func process_client(connection net.Conn) int {
 				if store_data(key, value) == 0 {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -462,22 +468,22 @@ func process_client(connection net.Conn) int {
 				if value != "" {
 					_, err = connection.Write([]byte(value))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					_, err = connection.Write([]byte("\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -493,22 +499,22 @@ func process_client(connection net.Conn) int {
 				if key != "" {
 					_, err = connection.Write([]byte(key))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					_, err = connection.Write([]byte("\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -520,7 +526,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -532,22 +538,22 @@ func process_client(connection net.Conn) int {
 				if value != "" {
 					_, err = connection.Write([]byte(value))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					_, err = connection.Write([]byte("\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -563,22 +569,22 @@ func process_client(connection net.Conn) int {
 				if value != "" {
 					_, err = connection.Write([]byte(value))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					_, err = connection.Write([]byte("\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -594,22 +600,22 @@ func process_client(connection net.Conn) int {
 				if key != "" {
 					_, err = connection.Write([]byte(key))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					_, err = connection.Write([]byte("\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -621,7 +627,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -632,18 +638,18 @@ func process_client(connection net.Conn) int {
 				if save_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -658,18 +664,18 @@ func process_client(connection net.Conn) int {
 				if load_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -681,7 +687,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -692,18 +698,18 @@ func process_client(connection net.Conn) int {
 				if save_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -718,18 +724,18 @@ func process_client(connection net.Conn) int {
 				if load_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error loading:", err.Error())
+						print_message("process_client: Error loading:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error loading:", err.Error())
+						print_message("process_client: Error loading:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error loading:", err.Error())
+					print_message("process_client: Error loading:" + err.Error())
 				}
 			}
 			continue
@@ -741,7 +747,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -752,18 +758,18 @@ func process_client(connection net.Conn) int {
 				if save_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -777,18 +783,18 @@ func process_client(connection net.Conn) int {
 				if load_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -800,7 +806,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -811,18 +817,18 @@ func process_client(connection net.Conn) int {
 				if save_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -837,18 +843,18 @@ func process_client(connection net.Conn) int {
 				if load_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				} else {
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 			}
 			continue
@@ -866,14 +872,14 @@ func process_client(connection net.Conn) int {
 					init_data()
 					_, err = connection.Write([]byte("OK\n"))
 					if err != nil {
-						fmt.Println("process_client: Error writing:", err.Error())
+						print_message("process_client: Error writing:" + err.Error())
 					}
 					continue
 				}
 			} else {
 				_, err = connection.Write([]byte("ERROR not admin user! Erasing denied!\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -888,7 +894,7 @@ func process_client(connection net.Conn) int {
 			info = "USAGE " + strconv.FormatFloat(used_space_percent, 'f', 2, 64) + "% : " + strconv.FormatUint(used_space, 10) + " of " + strconv.FormatUint(maxdata, 10) + "\n"
 			_, err = connection.Write([]byte(info))
 			if err != nil {
-				fmt.Println("process_client: Error sending space usage.", err.Error())
+				print_message("process_client: Error sending space usage." + err.Error())
 			}
 			continue
 		}
@@ -898,7 +904,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -907,7 +913,7 @@ func process_client(connection net.Conn) int {
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error set link:", err.Error())
+					print_message("process_client: Error set link:" + err.Error())
 				}
 			}
 
@@ -915,7 +921,7 @@ func process_client(connection net.Conn) int {
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error set link:", err.Error())
+					print_message("process_client: Error set link:" + err.Error())
 				}
 			}
 
@@ -923,12 +929,12 @@ func process_client(connection net.Conn) int {
 				// error
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error set link:", err.Error())
+					print_message("process_client: Error set link:" + err.Error())
 				}
 			} else {
 				_, err = connection.Write([]byte("OK\n"))
 				if err != nil {
-					fmt.Println("process_client: Error set link:", err.Error())
+					print_message("process_client: Error set link:" + err.Error())
 				}
 			}
 			continue
@@ -939,7 +945,7 @@ func process_client(connection net.Conn) int {
 			if user_role == "read-only" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error writing:", err.Error())
+					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
@@ -948,7 +954,7 @@ func process_client(connection net.Conn) int {
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error remove link:", err.Error())
+					print_message("process_client: Error remove link:" + err.Error())
 				}
 			}
 
@@ -956,7 +962,7 @@ func process_client(connection net.Conn) int {
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error remove link:", err.Error())
+					print_message("process_client: Error remove link:" + err.Error())
 				}
 			}
 
@@ -964,12 +970,12 @@ func process_client(connection net.Conn) int {
 				// error
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error remove link:", err.Error())
+					print_message("process_client: Error remove link:" + err.Error())
 				}
 			} else {
 				_, err = connection.Write([]byte("OK\n"))
 				if err != nil {
-					fmt.Println("process_client: Error remove link:", err.Error())
+					print_message("process_client: Error remove link:" + err.Error())
 				}
 			}
 			continue
@@ -981,7 +987,7 @@ func process_client(connection net.Conn) int {
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					print_message("process_client: Error get number of links:" + err.Error())
 				}
 			}
 
@@ -991,14 +997,14 @@ func process_client(connection net.Conn) int {
 				// error
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					print_message("process_client: Error get number of links:" + err.Error())
 				}
 			} else {
 				// all ok write number of links
 				info = strconv.FormatUint(ret, 10) + "\n"
 				_, err = connection.Write([]byte(info))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:.", err.Error())
+					print_message("process_client: Error get number of links:." + err.Error())
 				}
 			}
 			continue
@@ -1010,7 +1016,7 @@ func process_client(connection net.Conn) int {
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					print_message("process_client: Error get number of links:" + err.Error())
 				}
 			}
 
@@ -1018,7 +1024,7 @@ func process_client(connection net.Conn) int {
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error remove link:", err.Error())
+					print_message("process_client: Error remove link:" + err.Error())
 				}
 			}
 
@@ -1030,14 +1036,14 @@ func process_client(connection net.Conn) int {
 				// error
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:", err.Error())
+					print_message("process_client: Error get number of links:" + err.Error())
 				}
 			} else {
 				// all ok write link name
 				info = retstring + "\n"
 				_, err = connection.Write([]byte(info))
 				if err != nil {
-					fmt.Println("process_client: Error get number of links:.", err.Error())
+					print_message("process_client: Error get number of links:." + err.Error())
 				}
 			}
 		}
@@ -1045,7 +1051,7 @@ func process_client(connection net.Conn) int {
 		// no matching command
 		_, err = connection.Write([]byte("ERROR! UNKNOWN COMMAND!\n"))
 		if err != nil {
-			fmt.Println("process_client: Error sending unknown command error:", err.Error())
+			print_message("process_client: Error sending unknown command error:" + err.Error())
 		}
 	}
 
@@ -1061,8 +1067,8 @@ func main() {
 	var tls_flag_set bool = false
 	var server_http_port_set bool = false
 
-	fmt.Println("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
-	fmt.Println("l1vmgodata start 0.9.6 ...")
+	print_message("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
+	print_message("l1vmgodata start 0.9.6 ...")
 
 	fmt.Println("args: ", len(os.Args))
 
@@ -1095,6 +1101,7 @@ func main() {
 	}
 
 	fmt.Println("allocating ", maxdata, " space for data")
+
 	servdata := make([]data, maxdata) // make serverdata splice
 	pdata = &servdata
 
@@ -1102,7 +1109,7 @@ func main() {
 
 	// get configuration from: "settings.l1db"
 	if load_data(SETTINGS) != 0 {
-		fmt.Println("error: can't load config file 'settings.l1db'!")
+		print_message("error: can't load config file 'settings.l1db'!")
 		init_data()
 		pdata = nil
 		os.Exit(1)
@@ -1111,7 +1118,7 @@ func main() {
 	// get database root path
 	database_root = get_data_key("database-root\n")
 	if database_root == "" {
-		fmt.Println("can't get key ':database-root' from config file 'settings.l1db'!")
+		print_message("error: can't get key ':database-root' from config file 'settings.l1db'!")
 	}
 
 	// check for missing config
@@ -1120,7 +1127,7 @@ func main() {
 	if server_host_set == false {
 		server_host = get_data_key("host\n")
 		if server_host == "" {
-			fmt.Println("can't get key ':host' from config file 'settings.l1db'!")
+			print_message("error can't get key ':host' from config file 'settings.l1db'!")
 		} else {
 			server_host_set = true
 		}
@@ -1130,7 +1137,7 @@ func main() {
 	if server_port_set == false {
 		server_port = get_data_key("port\n")
 		if server_port == "" {
-			fmt.Println("can't get key ':port' from config file 'settings.l1db'!")
+			print_message("error: can't get key ':port' from config file 'settings.l1db'!")
 		} else {
 			server_port_set = true
 		}
@@ -1140,7 +1147,7 @@ func main() {
 	if tls_flag_set == false {
 		tls_flag = get_data_key("tls\n")
 		if tls_flag == "" {
-			fmt.Println("can't get key ':tls' from config file 'settings.l1db'!")
+			print_message("error: can't get key ':tls' from config file 'settings.l1db'!")
 		} else {
 			tls_flag_set = true
 		}
@@ -1150,7 +1157,7 @@ func main() {
 	if server_http_port_set == false {
 		server_http_port = get_data_key("http-port\n")
 		if server_http_port == "" {
-			fmt.Println("can't get key ':http-port' from config file 'settings.l1db'!")
+			print_message("error: can't get key ':http-port' from config file 'settings.l1db'!")
 		} else {
 			server_http_port_set = true
 		}
@@ -1158,14 +1165,14 @@ func main() {
 
 	// check if all needed config is set
 	if server_host_set == false {
-		fmt.Println("Error: no server host set!")
+		print_message("Error: no server host set!")
 		init_data()
 		pdata = nil
 		os.Exit(1)
 	}
 
 	if server_port_set == false {
-		fmt.Println("Error: no server port set!")
+		print_message("Error: no server port set!")
 		init_data()
 		pdata = nil
 		os.Exit(1)
@@ -1179,7 +1186,7 @@ func main() {
 	}
 
 	if server_http_port_set == false {
-		fmt.Println("Error: no http port config set!")
+		print_message("Error: no http port config set!")
 		init_data()
 		pdata = nil
 		os.Exit(1)
@@ -1189,14 +1196,14 @@ func main() {
 	init_data()
 
 	if tls_flag == "tls=on" {
-		fmt.Println("running server: TLS on!")
+		print_message("running server: TLS on!")
 		tls_sock = true
 		run_server_tls()
 		init_data()
 		pdata = nil
 		os.Exit(0)
 	} else {
-		fmt.Println("running server: normal socket!")
+		print_message("running server: normal socket!")
 		run_server()
 		init_data()
 		pdata = nil

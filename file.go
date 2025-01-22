@@ -1,219 +1,219 @@
-	// file.go - database in go
-	/*
-	* This file datafunc.go is part of L1VMgodata.
-	*
-	* (c) Copyright Stefan Pietzonke (jay-t@gmx.net), 2022
-	*
-	* L1VMgodata is free software: you can redistribute it and/or modify
-	* it under the terms of the GNU General Public License as published by
-	* the Free Software Foundation, either version 3 of the License, or
-	* (at your option) any later version.
-	*
-	* L1VMgodata is distributed in the hope that it will be useful,
-	* but WITHOUT ANY WARRANTY; without even the implied warranty of
-	* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	* GNU General Public License for more details.
-	*
-	* You should have received a copy of the GNU General Public License
-	* along with L1VMgodata.  If not, see <http://www.gnu.org/licenses/>.
-	*/
+// file.go - database in go
+/*
+* This file datafunc.go is part of L1VMgodata.
+*
+* (c) Copyright Stefan Pietzonke (jay-t@gmx.net), 2022
+*
+* L1VMgodata is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* L1VMgodata is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with L1VMgodata.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-	// tutorial code for tcp/ip sockets taken from: https://www.developer.com/languages/intro-socket-programming-go/
-	// data file save/load export/import functions
+// tutorial code for tcp/ip sockets taken from: https://www.developer.com/languages/intro-socket-programming-go/
+// data file save/load export/import functions
 
-	package main
+package main
 
-	import (
-		"bufio"
-		"crypto/sha256"
-		"fmt"
-		"os"
-		"strconv"
-		"strings"
-	)
+import (
+	"bufio"
+	"crypto/sha256"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+)
 
-	func check_filename(file_path string) bool {
-		var ret bool
-		// if filepath contains "..", return 1
-		// this is then an illegal one, because it could escape the data base file root!
-		ret = strings.Contains(file_path, "..")
+func check_filename(file_path string) bool {
+	var ret bool
+	// if filepath contains "..", return 1
+	// this is then an illegal one, because it could escape the data base file root!
+	ret = strings.Contains(file_path, "..")
 
-		if ret == true {
-			fmt.Println("Error database filename: " + file_path + " is illegal!")
-		}
-		return (ret)
+	if ret == true {
+		fmt.Println("Error database filename: " + file_path + " is illegal!")
+	}
+	return (ret)
+}
+
+func save_data(file_path string) int {
+	var i uint64 = 0
+	var l uint64 = 0
+	var linkslen uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
 	}
 
-	func save_data(file_path string) int {
-		var i uint64 = 0
-		var l uint64 = 0
-		var linkslen uint64 = 0
+	os.Remove(file_path)
+	// create file
+	f, err := os.Create(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer f.Close()
 
-		if check_filename(file_path) == true {
-			return 1
-		}
+	// write header
+	_, err = f.WriteString("l1vmgodata database\n")
+	if err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
 
-		os.Remove(file_path)
-		// create file
-		f, err := os.Create(file_path)
-		if err != nil {
-			fmt.Println("Error opening database file: " + file_path + err.Error())
-			return 1
-		}
-		// remember to close the file
-		defer f.Close()
-
-		// write header
-		_, err = f.WriteString("l1vmgodata database\n")
-		if err != nil {
-			fmt.Println("Error writing database file:", err.Error())
-			return 1
-		}
-
-		// write data loop
-		for i = 0; i < maxdata; i++ {
-			if (*pdata)[i].used {
-				dmutex.Lock()
-				value_save := strings.Trim((*pdata)[i].value, "'\n")
-				_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
-				if err != nil {
-					fmt.Println("Error writing database file:", err.Error())
-					dmutex.Unlock()
-					return 1
-				}
-
-				// save links number
-				linkslen = uint64(len((*pdata)[i].links))
-				_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64(linkslen), 10) + "\"\n")
+	// write data loop
+	for i = 0; i < maxdata; i++ {
+		if (*pdata)[i].used {
+			dmutex.Lock()
+			value_save := strings.Trim((*pdata)[i].value, "'\n")
+			_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
 				dmutex.Unlock()
-				if err != nil {
-					fmt.Println("Error writing database file:", err.Error())
-					return 1
-				}
-
-				// save links
-				if linkslen > 0 {
-					for l = 0; l < linkslen; l++ {
-						dmutex.Lock()
-						_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64((*pdata)[i].links[l]), 10) + "\"\n")
-						if err != nil {
-							fmt.Println("Error writing database file:", err.Error())
-							dmutex.Unlock()
-							return 1
-						}
-						dmutex.Unlock()
-					}
-				}
-			}
-		}
-
-		fmt.Println("Log: database " + file_path + " saved!")
-		return 0
-	}
-
-	func load_data(file_path string) int {
-		var i uint64 = 0
-		var header_line = 0
-		var key string
-		var value string
-		var l uint64 = 0
-		var linkslen uint64 = 0
-		var link uint64 = 0
-
-		if check_filename(file_path) == true {
-			return 1
-		}
-
-		// load database file
-		file, err := os.Open(file_path)
-		if err != nil {
-			fmt.Println("Error opening database file: " + file_path + " " + err.Error())
-			return 1
-		}
-		// remember to close the file
-		defer file.Close()
-
-		// set i to data_index, so we can load more than one database. And don't start on zero index again!
-		i = data_index
-
-		//fmt.Println("DEBUG: load: i start =", i)
-
-		// read and check header
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			line := scanner.Text()
-
-			//fmt.Println("DEBUG: i:", i, " line:", line)
-
-			if i < maxdata {
-				// enough data memory, load data
-				if header_line == 0 {
-					if line != "l1vmgodata database" {
-						fmt.Println("Error opening database file: " + file_path + " not a l1vmgodata database!")
-						return 1
-					}
-					header_line = 1
-				} else {
-					//fmt.Println("load_data: '" + line + "'\n")
-					key, value = split_data(line)
-
-					//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
-
-					if key != "" && key != "link" {
-						// store data
-						dmutex.Lock()
-						(*pdata)[i].used = true
-						(*pdata)[i].key = key
-						(*pdata)[i].value = value
-						dmutex.Unlock()
-					}
-
-					if key == "link" {
-						// get links number
-
-						linkslen, _ = strconv.ParseUint(value, 10, 64)
-
-						//fmt.Printf ("load: links: %d\n", linkslen)
-
-						if linkslen > 0 {
-							// there are links, load them
-							for l = 0; l < linkslen; l++ {
-								scanner.Scan()
-								line := scanner.Text()
-								key, value = split_data(line)
-								link, _ = strconv.ParseUint(value, 10, 64)
-
-								//fmt.Printf("load: link: %d\n", link)
-
-								dmutex.Lock()
-								(*pdata)[i].links = append((*pdata)[i].links, link)
-								dmutex.Unlock()
-
-								// DEBUG
-								fmt.Println("got link\n")
-							}
-						}
-						i++
-					}
-				}
-			} else {
-				fmt.Println("Error reading database: out of memory: entries overflow!")
-				fmt.Println("Failed to load index:", i, "into maxdata:", maxdata)
 				return 1
 			}
-		}
-		data_index = i
-		free_index = i // set next free index
 
-		fmt.Println("Log: database " + file_path + " loaded!")
-		return 0
+			// save links number
+			linkslen = uint64(len((*pdata)[i].links))
+			_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64(linkslen), 10) + "\"\n")
+			dmutex.Unlock()
+			if err != nil {
+				fmt.Println("Error writing database file:", err.Error())
+				return 1
+			}
+
+			// save links
+			if linkslen > 0 {
+				for l = 0; l < linkslen; l++ {
+					dmutex.Lock()
+					_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64((*pdata)[i].links[l]), 10) + "\"\n")
+					if err != nil {
+						fmt.Println("Error writing database file:", err.Error())
+						dmutex.Unlock()
+						return 1
+					}
+					dmutex.Unlock()
+				}
+			}
+		}
 	}
 
-	// export to .json data file
-	func save_data_json(file_path string) int {
-		var i uint64 = 0
+	fmt.Println("Log: database " + file_path + " saved!")
+	return 0
+}
 
-		if check_filename(file_path) == true {
+func load_data(file_path string) int {
+	var i uint64 = 0
+	var header_line = 0
+	var key string
+	var value string
+	var l uint64 = 0
+	var linkslen uint64 = 0
+	var link uint64 = 0
+
+	if check_filename(file_path) == true {
+		return 1
+	}
+
+	// load database file
+	file, err := os.Open(file_path)
+	if err != nil {
+		fmt.Println("Error opening database file: " + file_path + " " + err.Error())
+		return 1
+	}
+	// remember to close the file
+	defer file.Close()
+
+	// set i to data_index, so we can load more than one database. And don't start on zero index again!
+	i = data_index
+
+	//fmt.Println("DEBUG: load: i start =", i)
+
+	// read and check header
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		//fmt.Println("DEBUG: i:", i, " line:", line)
+
+		if i < maxdata {
+			// enough data memory, load data
+			if header_line == 0 {
+				if line != "l1vmgodata database" {
+					fmt.Println("Error opening database file: " + file_path + " not a l1vmgodata database!")
+					return 1
+				}
+				header_line = 1
+			} else {
+				//fmt.Println("load_data: '" + line + "'\n")
+				key, value = split_data(line)
+
+				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
+
+				if key != "" && key != "link" {
+					// store data
+					dmutex.Lock()
+					(*pdata)[i].used = true
+					(*pdata)[i].key = key
+					(*pdata)[i].value = value
+					dmutex.Unlock()
+				}
+
+				if key == "link" {
+					// get links number
+
+					linkslen, _ = strconv.ParseUint(value, 10, 64)
+
+					//fmt.Printf ("load: links: %d\n", linkslen)
+
+					if linkslen > 0 {
+						// there are links, load them
+						for l = 0; l < linkslen; l++ {
+							scanner.Scan()
+							line := scanner.Text()
+							key, value = split_data(line)
+							link, _ = strconv.ParseUint(value, 10, 64)
+
+							//fmt.Printf("load: link: %d\n", link)
+
+							dmutex.Lock()
+							(*pdata)[i].links = append((*pdata)[i].links, link)
+							dmutex.Unlock()
+
+							// DEBUG
+							fmt.Println("got link\n")
+						}
+					}
+					i++
+				}
+			}
+		} else {
+			fmt.Println("Error reading database: out of memory: entries overflow!")
+			fmt.Println("Failed to load index:", i, "into maxdata:", maxdata)
+			return 1
+		}
+	}
+	data_index = i
+	free_index = i // set next free index
+
+	fmt.Println("Log: database " + file_path + " loaded!")
+	return 0
+}
+
+// export to .json data file
+func save_data_json(file_path string) int {
+	var i uint64 = 0
+
+	if check_filename(file_path) == true {
 		return 1
 	}
 
