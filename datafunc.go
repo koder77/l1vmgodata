@@ -399,7 +399,6 @@ func set_link(key string, keylink string) int {
 	// set link between key and keylink data entries
 
 	var k uint64
-	var l uint64
 	var i uint64
 	var retstr string
 
@@ -410,7 +409,7 @@ func set_link(key string, keylink string) int {
 		return 1
 	}
 
-	retstr, l = get_data_key_compare(keylink)
+	retstr, _ = get_data_key_compare(keylink)
 	if retstr == "" {
 		// key not found
 		// return error code
@@ -421,7 +420,7 @@ func set_link(key string, keylink string) int {
 	// check if link was already set
 	dmutex.Lock()
 	for i = 0; i < uint64(len((*pdata)[k].links)); i++ {
-		if (*pdata)[k].links[i] == l {
+		if (*pdata)[k].links[i] != "" {
 			// error return, link was already set!
 			dmutex.Unlock()
 			return 1
@@ -429,7 +428,7 @@ func set_link(key string, keylink string) int {
 	}
 
 	// set the link
-	(*pdata)[k].links = append((*pdata)[k].links, l)
+	(*pdata)[k].links = append((*pdata)[k].links, keylink)
 	dmutex.Unlock()
 
 	return 0
@@ -443,7 +442,6 @@ func remove_link(key string, keylink string) int {
 	// set link between key and keylink data entries
 
 	var k uint64
-	var l uint64
 	var i uint64
 	var retstr string
 
@@ -454,7 +452,7 @@ func remove_link(key string, keylink string) int {
 		return 1
 	}
 
-	retstr, l = get_data_key_compare(keylink)
+	retstr, _ = get_data_key_compare(keylink)
 	if retstr == "" {
 		// keylink not found
 		// return error code
@@ -466,7 +464,7 @@ func remove_link(key string, keylink string) int {
 	// both key and keylink are found
 	// search the keylink string index in links
 	for i = 0; i < uint64(len((*pdata)[k].links)); i++ {
-		if (*pdata)[k].links[i] == l {
+		if (*pdata)[k].links[i] == keylink {
 			// found matching index in the keys link list
 			// rermove it
 			(*pdata)[k].links = remove_element_by_index((*pdata)[k].links, i)
@@ -500,7 +498,6 @@ func get_number_of_links(key string) (uint64, string) {
 func get_link(key string, link_index uint64) string {
 	var linkslen uint64
 	var k uint64
-	var l uint64
 	var retstr string
 
 	retstr, k = get_data_key_compare(key)
@@ -516,8 +513,7 @@ func get_link(key string, link_index uint64) string {
 		return ""
 	}
 
-	l = (*pdata)[k].links[link_index]
-	retstr = (*pdata)[l].key
+	retstr = (*pdata)[k].links[link_index]
 
 	return retstr
 }

@@ -95,7 +95,7 @@ func save_data(file_path string) int {
 			if linkslen > 0 {
 				for l = 0; l < linkslen; l++ {
 					dmutex.Lock()
-					_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64((*pdata)[i].links[l]), 10) + "\"\n")
+					_, err = f.WriteString(":link" + " \"" + (*pdata)[i].links[l] + "\"\n")
 					if err != nil {
 						fmt.Println("Error writing database file:", err.Error())
 						dmutex.Unlock()
@@ -118,7 +118,6 @@ func load_data(file_path string) int {
 	var value string
 	var l uint64 = 0
 	var linkslen uint64 = 0
-	var link uint64 = 0
 
 	if check_filename(file_path) == true {
 		return 1
@@ -181,12 +180,12 @@ func load_data(file_path string) int {
 							scanner.Scan()
 							line := scanner.Text()
 							key, value = split_data(line)
-							link, _ = strconv.ParseUint(value, 10, 64)
+							// link, _ = strconv.ParseUint(value, 10, 64)
 
 							//fmt.Printf("load: link: %d\n", link)
 
 							dmutex.Lock()
-							(*pdata)[i].links = append((*pdata)[i].links, link)
+							(*pdata)[i].links = append((*pdata)[i].links, value)
 							dmutex.Unlock()
 
 							// DEBUG

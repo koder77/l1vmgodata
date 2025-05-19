@@ -1,4 +1,10 @@
-L1VMgodata - (0.9.6)
+L1VMgodata - (0.9.7)
+  Changed data links to key names instead of index numbers.
+  So they don't base on the real data index. And can also be set in a database file without trouble.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Mon 19 Jan 21:00 +0200
+
+1VMgodata - (0.9.6)
   Added blacklist IP to ban after three failed logins.
 
 -- Stefan Pietzonke <jay-t@gmx.net> Sat 18 Jan 15:18 +0100

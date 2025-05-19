@@ -79,7 +79,7 @@ type data struct {
 	used  bool
 	key   string
 	value string
-	links []uint64
+	links []string
 }
 
 var maxdata uint64 = 10000 // max data number
@@ -1046,6 +1046,7 @@ func process_client(connection net.Conn) int {
 					print_message("process_client: Error get number of links:." + err.Error())
 				}
 			}
+			continue
 		}
 
 		// no matching command
@@ -1068,7 +1069,7 @@ func main() {
 	var server_http_port_set bool = false
 
 	print_message("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
-	print_message("l1vmgodata start 0.9.6 ...")
+	print_message("l1vmgodata start 0.9.7 ...")
 
 	fmt.Println("args: ", len(os.Args))
 

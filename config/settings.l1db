@@ -5,7 +5,7 @@ l1vmgodata database
 :link '0'
 :port "2000"
 :link '0'
-:tls "tls-on"
+:tls "tls-off"
 :link '0'
 :http-port "off"
 :link '0'
