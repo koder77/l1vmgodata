@@ -1,3 +1,8 @@
+L1VMgodata - (0.9.8)
+  Data base now stores key hashes to make the search faster.
+
+-- Stefan Pietzonke <jay-t@gmx.net> Thu 13 May 2026 21:31 +0200
+
 L1VMgodata - (0.9.7)
   Changed data links to key names instead of index numbers.
   So they don't base on the real data index. And can also be set in a database file without trouble.

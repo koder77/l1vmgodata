@@ -30,6 +30,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"github.com/cespare/xxhash/v2"
 )
 
 func check_filename(file_path string) bool {
@@ -158,12 +159,15 @@ func load_data(file_path string) int {
 
 				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
 
+				hash := xxhash.Sum64String(key)
+
 				if key != "" && key != "link" {
 					// store data
 					dmutex.Lock()
 					(*pdata)[i].used = true
 					(*pdata)[i].key = key
 					(*pdata)[i].value = value
+					(*pdata)[i].hash = hash
 					dmutex.Unlock()
 				}
 
@@ -303,12 +307,15 @@ func load_data_json(file_path string) int {
 				key, value = split_data_json(line)
 				// fmt.Println("key: " +key + " value: " + value +"\n")
 
+				hash := xxhash.Sum64String(key)
+
 				if key != "" {
 					// store data
 					dmutex.Lock()
 					(*pdata)[i].used = true
 					(*pdata)[i].key = key
 					(*pdata)[i].value = value
+					(*pdata)[i].hash = hash
 					dmutex.Unlock()
 					i++
 				}
@@ -404,12 +411,15 @@ func load_data_csv(file_path string) int {
 			// fmt.Println("read: " + line)
 			key, value = split_data_csv(line)
 
+			hash := xxhash.Sum64String(key)
+
 			//fmt.Println("load: key: " + key)
 			// store data
 			dmutex.Lock()
 			(*pdata)[i].used = true
 			(*pdata)[i].key = key
 			(*pdata)[i].value = value
+			(*pdata)[i].hash = hash
 			dmutex.Unlock()
 		} else {
 			fmt.Println("Error reading database: out of memory: entries overflow!")
@@ -615,11 +625,14 @@ func load_data_table_csv(file_path string) int {
 
 				//fmt.Println("csv table import: value: " + valuestr)
 
+				hash := xxhash.Sum64String(keyfullstr)
+
 				if i < maxdata {
 					dmutex.Lock()
 					(*pdata)[i].used = true
 					(*pdata)[i].key = keyfullstr
 					(*pdata)[i].value = valuestr
+					(*pdata)[i].hash = hash
 					data_index = i
 					i++
 					dmutex.Unlock()

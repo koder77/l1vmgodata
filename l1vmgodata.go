@@ -77,6 +77,7 @@ const (
 
 type data struct {
 	used  bool
+	hash  uint64
 	key   string
 	value string
 	links []string
@@ -1069,8 +1070,7 @@ func main() {
 	var server_http_port_set bool = false
 
 	print_message("l1vmgodata <ip> <port> <tls=on | tls=off> <http-port | off> [number of data entries]")
-	print_message("l1vmgodata start 0.9.7 ...")
-
+	print_message("l1vmgodata start 0.9.8")
 	fmt.Println("args: ", len(os.Args))
 
 	if len(os.Args) == 5 || len(os.Args) == 6 {

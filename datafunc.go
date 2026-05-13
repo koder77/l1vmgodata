@@ -29,19 +29,24 @@ import (
 	"strconv"
 	"strings"
 	"unsafe"
+	"github.com/cespare/xxhash/v2"
 )
 
 // search if key was already set and return 1, or 0 if not already set!
 func search_key(search_key string) (int, uint64) {
 	var i uint64
 
+	hash := xxhash.Sum64String(search_key)
+
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			if (*pdata)[i].key == search_key {
-				dmutex.Unlock()
-				// key already set
-				return 1, i
+			if hash == ((*pdata)[i].hash) {
+				if (*pdata)[i].key == search_key {
+					dmutex.Unlock()
+					// key already set
+					return 1, i
+				}
 			}
 		}
 	}
@@ -60,6 +65,7 @@ func init_data() {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
+		(*pdata)[i].hash = 0
 
 		linkslen = uint64(len((*pdata)[i].links))
 		if linkslen > 0 {
@@ -181,11 +187,14 @@ func store_data(key string, value string) uint64 {
 		}
 	}
 
+	hash := xxhash.Sum64String(key)
+
 	// store data at index i
 	dmutex.Lock()
 	(*pdata)[i].used = true
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
+	(*pdata)[i].hash = hash
 	dmutex.Unlock()
 	return 0
 }
@@ -212,11 +221,14 @@ func store_data_new(key string, value string) uint64 {
 		}
 	}
 
+	hash := xxhash.Sum64String(key)
+
 	// store data at index i
 	dmutex.Lock()
 	(*pdata)[i].used = true
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
+	(*pdata)[i].hash = hash
 	dmutex.Unlock()
 	return 0
 }
@@ -268,14 +280,20 @@ func get_data_key(key string) string {
 	var match bool
 
 	skey := strings.Trim(key, "\n")
+
+	hash := xxhash.Sum64String(skey)
+
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match = strings.Contains((*pdata)[i].key, skey)
-			if match {
-				dmutex.Unlock()
-				nvalue := strings.Trim((*pdata)[i].value, "'\n")
-				return nvalue
+			if hash == ((*pdata)[i].hash) {
+				// hashes match - do string compare
+				match = strings.Contains((*pdata)[i].key, skey)
+				if match {
+					dmutex.Unlock()
+					nvalue := strings.Trim((*pdata)[i].value, "'\n")
+					return nvalue
+				}
 			}
 		}
 	}
@@ -317,38 +335,42 @@ func remove_data(key string) string {
 	skey := strings.Trim(key, "\n")
 	// regexp := regexp.MustCompile(skey)
 
+	hash := xxhash.Sum64String(skey)
+
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
 			// match = regexp.Match([]byte((*pdata)[i].key))
-			match = (*pdata)[i].key == skey
-			if match {
-				fmt.Println("remove data: found match...")
-				for j = 0; j < maxdata; j++ {
-					if (*pdata)[j].used {
-						linkslen = uint64(len((*pdata)[j].links))
-						if linkslen > 0 {
-							for l = 0; l < linkslen; l++ {
-								// try remove the data link, if possible
-								// linkindex = (*pdata)[j].links[l]
-								//if (*pdata)[linkindex].key == skey {
-								dmutex.Unlock()
-								fmt.Println("remove data: key: " + (*pdata)[j].key)
-								_ = remove_link((*pdata)[j].key, skey)
-								dmutex.Lock()
-								//}
+			if hash == ((*pdata)[i].hash) {
+				match = (*pdata)[i].key == skey
+				if match {
+					fmt.Println("remove data: found match...")
+					for j = 0; j < maxdata; j++ {
+						if (*pdata)[j].used {
+							linkslen = uint64(len((*pdata)[j].links))
+							if linkslen > 0 {
+								for l = 0; l < linkslen; l++ {
+									// try remove the data link, if possible
+									// linkindex = (*pdata)[j].links[l]
+									//if (*pdata)[linkindex].key == skey {
+									dmutex.Unlock()
+									fmt.Println("remove data: key: " + (*pdata)[j].key)
+									_ = remove_link((*pdata)[j].key, skey)
+									dmutex.Lock()
+									//}
+								}
 							}
 						}
 					}
-				}
-				value = (*pdata)[i].value
-				(*pdata)[i].used = false
-				(*pdata)[i].key = ""
-				(*pdata)[i].value = ""
+					value = (*pdata)[i].value
+					(*pdata)[i].used = false
+					(*pdata)[i].key = ""
+					(*pdata)[i].value = ""
 
-				nvalue := strings.Trim(value, "'\n")
-				dmutex.Unlock()
-				return nvalue
+					nvalue := strings.Trim(value, "'\n")
+					dmutex.Unlock()
+					return nvalue
+				}
 			}
 		}
 	}
