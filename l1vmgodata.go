@@ -77,7 +77,8 @@ const (
 
 type data struct {
 	used  bool
-	hash  uint64
+	key_hash  uint64
+	value_hash uint64
 	key   string
 	value string
 	links []string

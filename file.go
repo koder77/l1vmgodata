@@ -159,7 +159,8 @@ func load_data(file_path string) int {
 
 				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
 
-				hash := xxhash.Sum64String(key)
+				key_hash := xxhash.Sum64String(key)
+				value_hash := xxhash.Sum64String(value)
 
 				if key != "" && key != "link" {
 					// store data
@@ -167,7 +168,8 @@ func load_data(file_path string) int {
 					(*pdata)[i].used = true
 					(*pdata)[i].key = key
 					(*pdata)[i].value = value
-					(*pdata)[i].hash = hash
+					(*pdata)[i].key_hash = key_hash
+					(*pdata)[i].value_hash = value_hash
 					dmutex.Unlock()
 				}
 
@@ -307,7 +309,8 @@ func load_data_json(file_path string) int {
 				key, value = split_data_json(line)
 				// fmt.Println("key: " +key + " value: " + value +"\n")
 
-				hash := xxhash.Sum64String(key)
+				key_hash := xxhash.Sum64String(key)
+				value_hash := xxhash.Sum64String(value)
 
 				if key != "" {
 					// store data
@@ -315,7 +318,8 @@ func load_data_json(file_path string) int {
 					(*pdata)[i].used = true
 					(*pdata)[i].key = key
 					(*pdata)[i].value = value
-					(*pdata)[i].hash = hash
+					(*pdata)[i].key_hash = key_hash
+					(*pdata)[i].value_hash = value_hash
 					dmutex.Unlock()
 					i++
 				}
@@ -411,7 +415,8 @@ func load_data_csv(file_path string) int {
 			// fmt.Println("read: " + line)
 			key, value = split_data_csv(line)
 
-			hash := xxhash.Sum64String(key)
+			key_hash := xxhash.Sum64String(key)
+			value_hash := xxhash.Sum64String(value)
 
 			//fmt.Println("load: key: " + key)
 			// store data
@@ -419,7 +424,8 @@ func load_data_csv(file_path string) int {
 			(*pdata)[i].used = true
 			(*pdata)[i].key = key
 			(*pdata)[i].value = value
-			(*pdata)[i].hash = hash
+			(*pdata)[i].key_hash = key_hash
+			(*pdata)[i].value_hash = value_hash
 			dmutex.Unlock()
 		} else {
 			fmt.Println("Error reading database: out of memory: entries overflow!")
@@ -625,14 +631,17 @@ func load_data_table_csv(file_path string) int {
 
 				//fmt.Println("csv table import: value: " + valuestr)
 
-				hash := xxhash.Sum64String(keyfullstr)
+				key_hash := xxhash.Sum64String(keyfullstr)
+				value_hash := xxhash.Sum64String(valuestr)
 
 				if i < maxdata {
 					dmutex.Lock()
 					(*pdata)[i].used = true
 					(*pdata)[i].key = keyfullstr
 					(*pdata)[i].value = valuestr
-					(*pdata)[i].hash = hash
+					(*pdata)[i].key_hash = key_hash
+					(*pdata)[i].value_hash = value_hash
+
 					data_index = i
 					i++
 					dmutex.Unlock()

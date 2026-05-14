@@ -36,12 +36,12 @@ import (
 func search_key(search_key string) (int, uint64) {
 	var i uint64
 
-	hash := xxhash.Sum64String(search_key)
+	key_hash := xxhash.Sum64String(search_key)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			if hash == ((*pdata)[i].hash) {
+			if key_hash == ((*pdata)[i].key_hash) {
 				if (*pdata)[i].key == search_key {
 					dmutex.Unlock()
 					// key already set
@@ -65,7 +65,8 @@ func init_data() {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
-		(*pdata)[i].hash = 0
+		(*pdata)[i].key_hash = 0
+		(*pdata)[i].value_hash = 0
 
 		linkslen = uint64(len((*pdata)[i].links))
 		if linkslen > 0 {
@@ -187,14 +188,16 @@ func store_data(key string, value string) uint64 {
 		}
 	}
 
-	hash := xxhash.Sum64String(key)
+	key_hash := xxhash.Sum64String(key)
+	value_hash := xxhash.Sum64String(value)
 
 	// store data at index i
 	dmutex.Lock()
 	(*pdata)[i].used = true
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
-	(*pdata)[i].hash = hash
+	(*pdata)[i].key_hash = key_hash
+	(*pdata)[i].value_hash = value_hash
 	dmutex.Unlock()
 	return 0
 }
@@ -221,14 +224,16 @@ func store_data_new(key string, value string) uint64 {
 		}
 	}
 
-	hash := xxhash.Sum64String(key)
+	key_hash := xxhash.Sum64String(key)
+	value_hash := xxhash.Sum64String(value)
 
 	// store data at index i
 	dmutex.Lock()
 	(*pdata)[i].used = true
 	(*pdata)[i].key = key
 	(*pdata)[i].value = value
-	(*pdata)[i].hash = hash
+	(*pdata)[i].key_hash = key_hash
+	(*pdata)[i].value_hash = value_hash
 	dmutex.Unlock()
 	return 0
 }
@@ -281,12 +286,12 @@ func get_data_key(key string) string {
 
 	skey := strings.Trim(key, "\n")
 
-	hash := xxhash.Sum64String(skey)
+	key_hash := xxhash.Sum64String(skey)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			if hash == ((*pdata)[i].hash) {
+			if key_hash == ((*pdata)[i].key_hash) {
 				// hashes match - do string compare
 				match = strings.Contains((*pdata)[i].key, skey)
 				if match {
@@ -335,13 +340,13 @@ func remove_data(key string) string {
 	skey := strings.Trim(key, "\n")
 	// regexp := regexp.MustCompile(skey)
 
-	hash := xxhash.Sum64String(skey)
+	key_hash := xxhash.Sum64String(skey)
 
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
 			// match = regexp.Match([]byte((*pdata)[i].key))
-			if hash == ((*pdata)[i].hash) {
+			if key_hash == ((*pdata)[i].key_hash) {
 				match = (*pdata)[i].key == skey
 				if match {
 					fmt.Println("remove data: found match...")
@@ -402,13 +407,17 @@ func get_data_key_compare(key string) (string, uint64) {
 
 	skey := strings.Trim(key, "\n")
 
+	key_hash := xxhash.Sum64String(skey)
+
 	dmutex.Lock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			if skey == (*pdata)[i].key {
-				dmutex.Unlock()
-				nvalue := strings.Trim((*pdata)[i].value, "'\n")
-				return nvalue, i
+			if key_hash == ((*pdata)[i].key_hash) {
+				if skey == (*pdata)[i].key {
+					dmutex.Unlock()
+					nvalue := strings.Trim((*pdata)[i].value, "'\n")
+					return nvalue, i
+				}
 			}
 		}
 	}
