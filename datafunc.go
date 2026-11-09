@@ -24,61 +24,94 @@ package main
 
 import (
 	"fmt"
+	"github.com/cespare/xxhash/v2"
 	"github.com/pbnjay/memory"
 	"regexp"
 	"strconv"
 	"strings"
 	"unsafe"
-	"github.com/cespare/xxhash/v2"
 )
+
+// index_add records a key index. The caller must hold dmutex.
+func index_add(key string, i uint64) {
+	key_index[key] = append(key_index[key], i)
+}
+
+// index_remove removes one index for a key. The caller must hold dmutex.
+func index_remove(key string, i uint64) {
+	indices := key_index[key]
+	for n := 0; n < len(indices); n++ {
+		if indices[n] == i {
+			indices = append(indices[:n], indices[n+1:]...)
+			break
+		}
+	}
+	if len(indices) == 0 {
+		delete(key_index, key)
+	} else {
+		key_index[key] = indices
+	}
+}
+
+// find_key_index returns the first data index for an exact key match.
+// The caller must hold dmutex.
+func find_key_index(key string) (uint64, bool) {
+	for _, i := range key_index[key] {
+		if (*pdata)[i].used && (*pdata)[i].key == key {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+// store_data_at writes a data entry and updates the key index.
+// The caller must hold dmutex.
+func store_data_at(i uint64, key string, value string) {
+	(*pdata)[i].used = true
+	(*pdata)[i].key = key
+	(*pdata)[i].value = value
+	(*pdata)[i].key_hash = xxhash.Sum64String(key)
+	(*pdata)[i].value_hash = xxhash.Sum64String(value)
+	index_add(key, i)
+	used_count++
+}
 
 // search if key was already set and return 1, or 0 if not already set!
 func search_key(search_key string) (int, uint64) {
-	var i uint64
-
-	key_hash := xxhash.Sum64String(search_key)
-
 	dmutex.Lock()
-	for i = 0; i < maxdata; i++ {
-		if (*pdata)[i].used {
-			if key_hash == ((*pdata)[i].key_hash) {
-				if (*pdata)[i].key == search_key {
-					dmutex.Unlock()
-					// key already set
-					return 1, i
-				}
-			}
-		}
+	defer dmutex.Unlock()
+
+	if i, found := find_key_index(search_key); found {
+		// key already set
+		return 1, i
 	}
-	dmutex.Unlock()
 	// key not found
-	return 0, i
+	return 0, maxdata
 }
 
 func init_data() {
 	var i uint64
-	var l uint64
-	var linkslen uint64
 
 	dmutex.Lock()
+	defer dmutex.Unlock()
+
+	key_index = make(map[string][]uint64)
+	used_count = 0
+	data_index = 0
+	free_index = 0
+
+	if pdata == nil {
+		return
+	}
+
 	for i = 0; i < maxdata; i++ {
 		(*pdata)[i].used = false
 		(*pdata)[i].key = ""
 		(*pdata)[i].value = ""
 		(*pdata)[i].key_hash = 0
 		(*pdata)[i].value_hash = 0
-
-		linkslen = uint64(len((*pdata)[i].links))
-		if linkslen > 0 {
-			// there are links set, remove all:
-			for l = 0; l < linkslen; l++ {
-				(*pdata)[i].links = remove_element_by_index((*pdata)[i].links, l)
-			}
-		}
+		(*pdata)[i].links = nil
 	}
-	dmutex.Unlock()
-	data_index = 0
-	free_index = 0
 }
 
 func get_free_space() (int, uint64) {
@@ -167,10 +200,12 @@ func try_to_allocate_more_space() int {
 func store_data(key string, value string) uint64 {
 	var i uint64 = 0
 	var err int = 0
+	var new_key bool = false
 
 	err, i = search_key(key)
 	if err == 0 {
 		// key not already used, get free space
+		new_key = true
 		err, i = get_free_space()
 		if err == 1 {
 			// error: no free space
@@ -188,16 +223,17 @@ func store_data(key string, value string) uint64 {
 		}
 	}
 
-	key_hash := xxhash.Sum64String(key)
-	value_hash := xxhash.Sum64String(value)
-
 	// store data at index i
 	dmutex.Lock()
-	(*pdata)[i].used = true
-	(*pdata)[i].key = key
-	(*pdata)[i].value = value
-	(*pdata)[i].key_hash = key_hash
-	(*pdata)[i].value_hash = value_hash
+	if new_key {
+		store_data_at(i, key, value)
+	} else {
+		(*pdata)[i].used = true
+		(*pdata)[i].key = key
+		(*pdata)[i].value = value
+		(*pdata)[i].key_hash = xxhash.Sum64String(key)
+		(*pdata)[i].value_hash = xxhash.Sum64String(value)
+	}
 	dmutex.Unlock()
 	return 0
 }
@@ -224,85 +260,70 @@ func store_data_new(key string, value string) uint64 {
 		}
 	}
 
-	key_hash := xxhash.Sum64String(key)
-	value_hash := xxhash.Sum64String(value)
-
 	// store data at index i
 	dmutex.Lock()
-	(*pdata)[i].used = true
-	(*pdata)[i].key = key
-	(*pdata)[i].value = value
-	(*pdata)[i].key_hash = key_hash
-	(*pdata)[i].value_hash = value_hash
+	store_data_at(i, key, value)
 	dmutex.Unlock()
 	return 0
 }
 
 func get_data_key_regexp(key string) string {
 	var i uint64
-	var match bool
 
 	skey := strings.Trim(key, "\n")
+	// Compile the expression once, not once per database entry.
+	re, err := regexp.Compile(skey)
+	if err != nil {
+		return ""
+	}
+
 	dmutex.Lock()
+	defer dmutex.Unlock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match, _ = regexp.MatchString(skey, (*pdata)[i].key)
-			if match {
-				dmutex.Unlock()
+			if re.MatchString((*pdata)[i].key) {
 				nvalue := strings.Trim((*pdata)[i].key, "'\n")
 				return nvalue
 			}
 		}
 	}
-	dmutex.Unlock()
 	// no matching key found, return empty string
 	return ""
 }
 
 func get_data_value_regexp(value string) string {
 	var i uint64
-	var match bool
 
 	svalue := strings.Trim(value, "\n")
+	// Compile the expression once, not once per database entry.
+	re, err := regexp.Compile(svalue)
+	if err != nil {
+		return ""
+	}
+
 	dmutex.Lock()
+	defer dmutex.Unlock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			match, _ = regexp.MatchString(svalue, (*pdata)[i].value)
-			if match {
-				dmutex.Unlock()
+			if re.MatchString((*pdata)[i].value) {
 				nvalue := strings.Trim((*pdata)[i].key, "'\n")
 				return nvalue
 			}
 		}
 	}
-	dmutex.Unlock()
 	// no matching value found, return empty string
 	return ""
 }
 
 func get_data_key(key string) string {
-	var i uint64
-	var match bool
-
 	skey := strings.Trim(key, "\n")
 
-	key_hash := xxhash.Sum64String(skey)
-
 	dmutex.Lock()
-	for i = 0; i < maxdata; i++ {
-		if (*pdata)[i].used {
-			if key_hash == ((*pdata)[i].key_hash) {
-				// hashes match - do string compare
-				match = strings.Contains((*pdata)[i].key, skey)
-				if match {
-					dmutex.Unlock()
-					nvalue := strings.Trim((*pdata)[i].value, "'\n")
-					return nvalue
-				}
-			}
-		}
+	defer dmutex.Unlock()
+
+	if i, found := find_key_index(skey); found {
+		return strings.Trim((*pdata)[i].value, "'\n")
 	}
-	dmutex.Unlock()
 	// no matching key found, return empty string
 	return ""
 }
@@ -330,100 +351,71 @@ func get_data_value(value string) string {
 }
 
 func remove_data(key string) string {
-	var i uint64
 	var j uint64
-	var l uint64
-	//var linkindex uint64
-	var match bool
 	var value string
-	var linkslen uint64 = 0
 	skey := strings.Trim(key, "\n")
-	// regexp := regexp.MustCompile(skey)
-
-	key_hash := xxhash.Sum64String(skey)
 
 	dmutex.Lock()
-	for i = 0; i < maxdata; i++ {
-		if (*pdata)[i].used {
-			// match = regexp.Match([]byte((*pdata)[i].key))
-			if key_hash == ((*pdata)[i].key_hash) {
-				match = (*pdata)[i].key == skey
-				if match {
-					fmt.Println("remove data: found match...")
-					for j = 0; j < maxdata; j++ {
-						if (*pdata)[j].used {
-							linkslen = uint64(len((*pdata)[j].links))
-							if linkslen > 0 {
-								for l = 0; l < linkslen; l++ {
-									// try remove the data link, if possible
-									// linkindex = (*pdata)[j].links[l]
-									//if (*pdata)[linkindex].key == skey {
-									dmutex.Unlock()
-									fmt.Println("remove data: key: " + (*pdata)[j].key)
-									_ = remove_link((*pdata)[j].key, skey)
-									dmutex.Lock()
-									//}
-								}
-							}
-						}
-					}
-					value = (*pdata)[i].value
-					(*pdata)[i].used = false
-					(*pdata)[i].key = ""
-					(*pdata)[i].value = ""
+	i, found := find_key_index(skey)
+	if !found {
+		dmutex.Unlock()
+		// no matching key found, return empty string
+		return ""
+	}
 
-					nvalue := strings.Trim(value, "'\n")
-					dmutex.Unlock()
-					return nvalue
-				}
+	value = (*pdata)[i].value
+
+	// remove all links pointing to this key
+	for j = 0; j < maxdata; j++ {
+		if !(*pdata)[j].used || len((*pdata)[j].links) == 0 {
+			continue
+		}
+		links := (*pdata)[j].links
+		kept := links[:0]
+		for _, link := range links {
+			if link != skey {
+				kept = append(kept, link)
 			}
 		}
+		(*pdata)[j].links = kept
 	}
+
+	(*pdata)[i].used = false
+	(*pdata)[i].key = ""
+	(*pdata)[i].value = ""
+	(*pdata)[i].key_hash = 0
+	(*pdata)[i].value_hash = 0
+	(*pdata)[i].links = nil
+	index_remove(skey, i)
+	used_count--
+
+	nvalue := strings.Trim(value, "'\n")
 	dmutex.Unlock()
-	// no matching key found, return empty string
-	return ""
+	return nvalue
 }
 
 // get info about data base usage, return used space
 func get_used_elements() uint64 {
-	var i uint64
-	var free uint64 = 0
-
 	dmutex.Lock()
-	for i = 0; i < maxdata; i++ {
-		if (*pdata)[i].used {
-			free++
-		}
-	}
-	dmutex.Unlock()
+	defer dmutex.Unlock()
 	// return free data space
-	return free
+	return used_count
 }
 
 // link functions ==============================================================
 func get_data_key_compare(key string) (string, uint64) {
 	// don't use regex to compare, using normal string compare to find exact match
-	var i uint64
-
 	skey := strings.Trim(key, "\n")
 
-	key_hash := xxhash.Sum64String(skey)
-
 	dmutex.Lock()
-	for i = 0; i < maxdata; i++ {
-		if (*pdata)[i].used {
-			if key_hash == ((*pdata)[i].key_hash) {
-				if skey == (*pdata)[i].key {
-					dmutex.Unlock()
-					nvalue := strings.Trim((*pdata)[i].value, "'\n")
-					return nvalue, i
-				}
-			}
-		}
+	defer dmutex.Unlock()
+
+	if i, found := find_key_index(skey); found {
+		nvalue := strings.Trim((*pdata)[i].value, "'\n")
+		return nvalue, i
 	}
-	dmutex.Unlock()
 	// no matching key found, return empty string
-	return "", i
+	return "", maxdata
 }
 
 func set_link(key string, keylink string) int {

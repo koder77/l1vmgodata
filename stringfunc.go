@@ -28,57 +28,39 @@ import (
 )
 
 func get_client_ip(address string) string {
-	var i int = 0
-	var ip_str string = ""
-	// get ip part before port: 192.168.0.1:4000
-	for address[i] != ':' {
-		ip_str = ip_str + string(address[i])
-		i++
+	// Split at the last colon, so IPv6 addresses like [::1]:2000 work too.
+	i := strings.LastIndexByte(address, ':')
+	if i < 0 {
+		return address
 	}
-	return ip_str
+	ip := address[:i]
+	if len(ip) >= 2 && ip[0] == '[' && ip[len(ip)-1] == ']' {
+		return ip[1 : len(ip)-1]
+	}
+	return ip
 }
 
 func check_data(input string) int {
-	var i int = 0
-	var colon_pos int = 0
-	var chars_start = 0
-	var quote_start int = 0
-	var quote_end int = 0
-	var quote int = 0
-	var inplen int = 0
-	inplen = len(input)
+	inplen := len(input)
 
 	if inplen <= 1 {
 		// ERROR string to short
 		return 1
 	}
 
-	for i = 0; i < inplen; i++ {
-		if colon_pos != 0 {
-			if input[i] != ' ' {
-				if chars_start == 0 {
-					chars_start = i
-				}
-			}
-		}
-		if input[i] == ':' {
-			colon_pos = i
-		}
-		if input[i] == '\'' {
-			if quote_start != 0 {
-				if quote_end == 0 {
-					quote_end = i
-				}
-			}
-			if quote_start == 0 {
-				quote_start = i
-			}
-			quote = quote + 1
+	colon_pos := strings.IndexByte(input, ':')
+	quote_start := strings.IndexByte(input, '\'')
+	quote := strings.Count(input, "'")
+
+	quote_end := -1
+	if quote_start >= 0 {
+		if pos := strings.IndexByte(input[quote_start+1:], '\''); pos >= 0 {
+			quote_end = quote_start + 1 + pos
 		}
 	}
 
 	// check if everything makes sense
-	if colon_pos == 0 {
+	if colon_pos <= 0 {
 		// no colon found, error
 		fmt.Println("check_data: error no colon found!")
 		return 1
@@ -100,283 +82,136 @@ func check_data(input string) int {
 }
 
 func split_data(input string) (string, string) {
-	var i int = 0
-	var j int = 0
-	var search bool = true
-	var copy bool = true
-	var inkey string = ""
-	var invalue string = ""
-	var inplen int = 0
-	inplen = len(input)
+	inplen := len(input)
 	if inplen <= 1 {
 		return "", ""
 	}
 
-	for search {
-		if input[i] == ':' {
-			// store chars until next space char
-			if i >= inplen {
-				copy = false
-				search = false
-				return "", ""
-			}
-			i++
-			for copy {
-				if input[i] != ' ' {
-					inkey = inkey + string(input[i])
-				} else {
-					copy = false
-					search = false
-				}
-				i++
-				if i >= inplen {
-					copy = false
-					search = false
-				}
-			}
-		}
-		i++
+	colon_pos := strings.IndexByte(input, ':')
+	if colon_pos < 0 {
+		return "", ""
 	}
 
-	// read chars into data
-	for j = i; j < inplen; j++ {
-		if input[i] != '\'' {
-			if input[i] != '"' {
-				invalue = invalue + string(input[i])
-			}
+	key_start := colon_pos + 1
+	key_end := strings.IndexByte(input[key_start:], ' ')
+
+	var inkey string
+	value_start := inplen
+	if key_end < 0 {
+		inkey = input[key_start:]
+	} else {
+		key_end += key_start
+		inkey = input[key_start:key_end]
+		// The original parser skips the space and the opening quote.
+		value_start = key_end + 2
+		if value_start > inplen {
+			value_start = inplen
 		}
-		i++
 	}
-	return inkey, invalue
+
+	var invalue strings.Builder
+	invalue.Grow(inplen - value_start)
+	for i := value_start; i < inplen; i++ {
+		c := input[i]
+		if c != '\'' && c != '"' {
+			invalue.WriteByte(c)
+		}
+	}
+
+	return inkey, invalue.String()
 }
 
 func split_data_json(input string) (string, string) {
-	var i int = 0
-	var search bool = true
-	var copy bool = true
-	var inkey string = ""
-	var invalue string = ""
-	var inplen int = 0
-	var pos int = 0
-	var asciicode int = 0
-	inplen = len(input)
-	// search for: "key":
-	pos = strings.Index(input, "\"key\":")
-	if pos == -1 {
+	key_pos := strings.Index(input, "\"key\":")
+	if key_pos == -1 {
 		// error: key part not found in string line
 		return "", ""
 	}
+
 	// get key
-	i = pos + 6
-	for search {
-		asciicode = int(input[i])
-		if asciicode == 34 {
-			// found quote char
-			if i >= inplen {
-				copy = false
-				search = false
-				return "", ""
-			}
-			i++
-			for copy {
-				asciicode = int(input[i])
-				if asciicode != 34 {
-					inkey = inkey + string(input[i])
-				} else {
-					copy = false
-					search = false
-				}
-				i++
-				if i >= inplen {
-					copy = false
-					search = false
-				}
-
-			}
-		}
-		i++
-	}
-
-	search = true
-	copy = true
-	pos = strings.Index(input, "\"value\":")
-	if pos == -1 {
-		// error: key part not found in string line
+	i := key_pos + len("\"key\":")
+	quote_start := strings.IndexByte(input[i:], '"')
+	if quote_start < 0 {
 		return "", ""
 	}
-	// get value
-	i = pos + 8
-	for search {
-		asciicode = int(input[i])
-		if asciicode == 34 {
-			// found quote char
-			if i >= inplen {
-				copy = false
-				search = false
-				return "", ""
-			}
-			i++
-			for copy {
-				asciicode = int(input[i])
-				if asciicode != 34 {
-					invalue = invalue + string(input[i])
-				} else {
-					copy = false
-					search = false
-				}
-				i++
-				if i >= inplen {
-					copy = false
-					search = false
-				}
-
-			}
-		}
-		i++
+	i += quote_start + 1
+	quote_end := strings.IndexByte(input[i:], '"')
+	if quote_end < 0 {
+		return "", ""
 	}
+	inkey := input[i : i+quote_end]
+
+	value_pos := strings.Index(input, "\"value\":")
+	if value_pos == -1 {
+		// error: value part not found in string line
+		return "", ""
+	}
+
+	// get value
+	i = value_pos + len("\"value\":")
+	quote_start = strings.IndexByte(input[i:], '"')
+	if quote_start < 0 {
+		return "", ""
+	}
+	i += quote_start + 1
+	quote_end = strings.IndexByte(input[i:], '"')
+	if quote_end < 0 {
+		return "", ""
+	}
+	invalue := input[i : i+quote_end]
 
 	return inkey, invalue
 }
 
 func split_data_csv(input string) (string, string) {
-	var i int = 0
-	var inkey string = ""
-	var invalue string = ""
-	var inplen int = 0
-	var comma_pos int = 0
-	var got_char bool = false
-	inplen = len(input)
-
-	// check for comma
-	for i = 0; i < inplen; i++ {
-		if input[i] == ',' {
-			comma_pos = i
-			break
-		}
+	comma_pos := strings.IndexByte(input, ',')
+	if comma_pos <= 0 {
+		return "", ""
 	}
 
-	if comma_pos == 0 {
-		inkey = ""
-		invalue = ""
-		return inkey, invalue
-	}
-
-	// get key before the comma
-	for i = 0; i < comma_pos; i++ {
-		if input[i] == ' ' {
-			if got_char == true {
-				inkey = inkey + string(input[i])
-			}
-		} else {
-			inkey = inkey + string(input[i])
-			got_char = true
-		}
-	}
-
+	// get key before the comma, dropping leading spaces
+	inkey := strings.TrimLeft(input[:comma_pos], " ")
 	// get part after the comma to the end of line
-	for i = comma_pos + 1; i < inplen; i++ {
-		invalue = invalue + string(input[i])
-	}
+	invalue := input[comma_pos+1:]
 
 	return inkey, invalue
 }
 
 func split_data_csv_table(input string, start int) (string, int, int) {
-	var i int = 0
-	var v int = 0
-	var value string = ""
-	var inplen int = 0
-	var comma_pos int = 0
-	var got_char bool = false
-	inplen = len(input)
+	inplen := len(input)
 
 	if start == inplen {
 		return "", 0, 0
 	}
 
-	// check for comma
-	comma_pos = 0
-	for i = start; i < inplen; i++ {
-		if input[i] == ',' {
-			comma_pos = i
-			//start = comma_pos + 1  // for next comma search start
-			break
-		}
-	}
-
-	value = ""
-	if comma_pos != 0 {
-		for v = start; v < comma_pos; v++ {
-			if input[v] == ' ' {
-				if got_char == true {
-					value = value + string(input[v])
-				}
-			} else {
-				value = value + string(input[v])
-				got_char = true
-			}
-		}
-		return value, comma_pos, comma_pos + 1
-	} else {
-		if i == inplen {
-			for v = start; v < inplen; v++ {
-				if input[v] == ' ' {
-					if got_char == true {
-						value = value + string(input[v])
-					}
-				} else {
-					value = value + string(input[v])
-					got_char = true
-				}
-			}
-			return value, comma_pos, inplen
-		} else {
+	comma_pos := strings.IndexByte(input[start:], ',')
+	if comma_pos != -1 {
+		comma_pos += start
+		if comma_pos == 0 {
 			return "", 0, 0
 		}
+		value := strings.TrimLeft(input[start:comma_pos], " ")
+		return value, comma_pos, comma_pos + 1
 	}
+
+	if start < inplen {
+		value := strings.TrimLeft(input[start:], " ")
+		return value, 0, inplen
+	}
+
+	return "", 0, 0
 }
 
 func check_input_key(input string) int {
-	var i int = 0
-	var search bool = true
-	var inplen int = 0
-	var colon bool = false
-
-	inplen = len(input)
-	for search {
-		if input[i] == ':' {
-			colon = true
-		}
-
-		i++
-		if i >= inplen {
-			search = false
-		}
-	}
-	if colon == false {
-		// error no two single quotes
+	if strings.IndexByte(input, ':') < 0 {
+		// error no colon
 		return 1
 	}
 	return 0
 }
 
 func check_input_value(input string) int {
-	var i int = 0
-	var search bool = true
-	var inplen int = 0
-	var single_quote = 0
-
-	inplen = len(input)
-	for search {
-		if input[i] == '\'' {
-			single_quote++
-		}
-		i++
-		if i >= inplen {
-			search = false
-		}
-	}
-	if single_quote != 2 {
+	if strings.Count(input, "'") != 2 {
 		// error no two single quotes
 		return 1
 	}
@@ -384,85 +219,38 @@ func check_input_value(input string) int {
 }
 
 func split_key(input string) string {
-	var i int = 0
-	var search bool = true
-	var copy bool = true
-	var inkey string = ""
-	var inplen int = 0
-	inplen = len(input)
 	if check_input_key(input) == 1 {
 		// error
 		return ""
 	}
-	for search {
-		if input[i] == ':' && i < inplen {
-			// store chars until next space char
-			if i >= inplen {
-				copy = false
-				search = false
-				return ""
-			}
-			i++
-			for copy {
-				if input[i] != ' ' {
-					inkey = inkey + string(input[i])
-				} else {
-					copy = false
-					search = false
-				}
-				i++
-				if i >= inplen {
-					copy = false
-					search = false
-				}
-			}
-		}
-		i++
-		if i >= inplen {
-			search = false
-		}
+
+	colon_pos := strings.IndexByte(input, ':')
+	key_start := colon_pos + 1
+	if key_start >= len(input) {
+		return ""
 	}
-	return inkey
+
+	key_end := strings.IndexByte(input[key_start:], ' ')
+	if key_end < 0 {
+		return input[key_start:]
+	}
+	return input[key_start : key_start+key_end]
 }
 
 func split_value(input string) string {
-	var i int = 0
-	var search bool = true
-	var copy bool = true
-	var invalue string = ""
-	var inplen int = 0
-	inplen = len(input)
 	if check_input_value(input) == 1 {
 		// error
 		return ""
 	}
-	for search {
-		if input[i] == '\'' && i < inplen {
-			// store chars until next quote char
-			if i >= inplen {
-				copy = false
-				search = false
-				return ""
-			}
-			i++
-			for copy {
-				if input[i] != '\'' {
-					invalue = invalue + string(input[i])
-				} else {
-					copy = false
-					search = false
-				}
-				i++
-				if i >= inplen {
-					copy = false
-					search = false
-				}
-			}
-		}
-		i++
-		if i >= inplen {
-			search = false
-		}
+
+	quote_start := strings.IndexByte(input, '\'')
+	if quote_start < 0 {
+		return ""
 	}
-	return invalue
+	rest := input[quote_start+1:]
+	quote_end := strings.IndexByte(rest, '\'')
+	if quote_end < 0 {
+		return ""
+	}
+	return rest[:quote_end]
 }

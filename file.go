@@ -30,7 +30,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"github.com/cespare/xxhash/v2"
 )
 
 func check_filename(file_path string) bool {
@@ -47,14 +46,11 @@ func check_filename(file_path string) bool {
 
 func save_data(file_path string) int {
 	var i uint64 = 0
-	var l uint64 = 0
-	var linkslen uint64 = 0
 
 	if check_filename(file_path) == true {
 		return 1
 	}
 
-	os.Remove(file_path)
 	// create file
 	f, err := os.Create(file_path)
 	if err != nil {
@@ -64,48 +60,51 @@ func save_data(file_path string) int {
 	// remember to close the file
 	defer f.Close()
 
+	// Buffer the writes, otherwise every line is a separate syscall.
+	w := bufio.NewWriter(f)
+	defer w.Flush()
+
 	// write header
-	_, err = f.WriteString("l1vmgodata database\n")
+	_, err = w.WriteString("l1vmgodata database\n")
 	if err != nil {
 		fmt.Println("Error writing database file:", err.Error())
 		return 1
 	}
 
 	// write data loop
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			dmutex.Lock()
 			value_save := strings.Trim((*pdata)[i].value, "'\n")
-			_, err = f.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
+			_, err = w.WriteString(":" + (*pdata)[i].key + " \"" + value_save + "\"\n")
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
-				dmutex.Unlock()
 				return 1
 			}
 
 			// save links number
-			linkslen = uint64(len((*pdata)[i].links))
-			_, err = f.WriteString(":link" + " \"" + strconv.FormatInt(int64(linkslen), 10) + "\"\n")
-			dmutex.Unlock()
+			linkslen := len((*pdata)[i].links)
+			_, err = w.WriteString(":link \"" + strconv.Itoa(linkslen) + "\"\n")
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
 				return 1
 			}
 
 			// save links
-			if linkslen > 0 {
-				for l = 0; l < linkslen; l++ {
-					dmutex.Lock()
-					_, err = f.WriteString(":link" + " \"" + (*pdata)[i].links[l] + "\"\n")
-					if err != nil {
-						fmt.Println("Error writing database file:", err.Error())
-						dmutex.Unlock()
-						return 1
-					}
-					dmutex.Unlock()
+			for _, link := range (*pdata)[i].links {
+				_, err = w.WriteString(":link \"" + link + "\"\n")
+				if err != nil {
+					fmt.Println("Error writing database file:", err.Error())
+					return 1
 				}
 			}
 		}
+	}
+
+	if err = w.Flush(); err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
 	}
 
 	fmt.Println("Log: database " + file_path + " saved!")
@@ -136,14 +135,13 @@ func load_data(file_path string) int {
 	// set i to data_index, so we can load more than one database. And don't start on zero index again!
 	i = data_index
 
-	//fmt.Println("DEBUG: load: i start =", i)
-
 	// read and check header
 	scanner := bufio.NewScanner(file)
+
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for scanner.Scan() {
 		line := scanner.Text()
-
-		//fmt.Println("DEBUG: i:", i, " line:", line)
 
 		if i < maxdata {
 			// enough data memory, load data
@@ -154,31 +152,16 @@ func load_data(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				//fmt.Println("load_data: '" + line + "'\n")
 				key, value = split_data(line)
-
-				//fmt.Println("load_data: key: '" + key + "' value: '" + value + "'\n\n")
-
-				key_hash := xxhash.Sum64String(key)
-				value_hash := xxhash.Sum64String(value)
 
 				if key != "" && key != "link" {
 					// store data
-					dmutex.Lock()
-					(*pdata)[i].used = true
-					(*pdata)[i].key = key
-					(*pdata)[i].value = value
-					(*pdata)[i].key_hash = key_hash
-					(*pdata)[i].value_hash = value_hash
-					dmutex.Unlock()
+					store_data_at(i, key, value)
 				}
 
 				if key == "link" {
 					// get links number
-
 					linkslen, _ = strconv.ParseUint(value, 10, 64)
-
-					//fmt.Printf ("load: links: %d\n", linkslen)
 
 					if linkslen > 0 {
 						// there are links, load them
@@ -186,16 +169,7 @@ func load_data(file_path string) int {
 							scanner.Scan()
 							line := scanner.Text()
 							key, value = split_data(line)
-							// link, _ = strconv.ParseUint(value, 10, 64)
-
-							//fmt.Printf("load: link: %d\n", link)
-
-							dmutex.Lock()
 							(*pdata)[i].links = append((*pdata)[i].links, value)
-							dmutex.Unlock()
-
-							// DEBUG
-							fmt.Println("got link\n")
 						}
 					}
 					i++
@@ -231,20 +205,33 @@ func save_data_json(file_path string) int {
 	// remember to close the file
 	defer f.Close()
 
+	// Buffer the writes, otherwise every line is a separate syscall.
+	w := bufio.NewWriter(f)
+	defer w.Flush()
+
 	// write header
-	_, err = f.WriteString("{ \"l1vmgodata database\" :[\n")
+	_, err = w.WriteString("{ \"l1vmgodata database\" :[\n")
 	if err != nil {
 		fmt.Println("Error writing database file:", err.Error())
 		return 1
 	}
 
 	// write data loop
+	first := true
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
-			dmutex.Lock()
 			value_save := strings.Trim((*pdata)[i].value, "\n")
-			_, err = f.WriteString("{ \"key\": \"" + (*pdata)[i].key + "\", \"value\": \"" + value_save + "\" },\n")
-			dmutex.Unlock()
+			if !first {
+				_, err = w.WriteString(",\n")
+				if err != nil {
+					fmt.Println("Error writing database file:", err.Error())
+					return 1
+				}
+			}
+			first = false
+			_, err = w.WriteString("{ \"key\": \"" + (*pdata)[i].key + "\", \"value\": \"" + value_save + "\" }")
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
 				return 1
@@ -252,15 +239,13 @@ func save_data_json(file_path string) int {
 		}
 	}
 
-	// remove last comma to create valid json file:
-	_, err = f.Seek(-2, 1)
+	_, err = w.WriteString("\n]\n}\n")
 	if err != nil {
-		fmt.Println("Error seeking database file:", err.Error())
+		fmt.Println("Error writing database file:", err.Error())
 		return 1
 	}
 
-	_, err = f.WriteString("\n]\n}\n")
-	if err != nil {
+	if err = w.Flush(); err != nil {
 		fmt.Println("Error writing database file:", err.Error())
 		return 1
 	}
@@ -294,6 +279,9 @@ func load_data_json(file_path string) int {
 
 	// read and check header
 	scanner := bufio.NewScanner(file)
+
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for scanner.Scan() {
 		line := scanner.Text()
 		if i < maxdata {
@@ -305,22 +293,11 @@ func load_data_json(file_path string) int {
 				}
 				header_line = 1
 			} else {
-				// fmt.Println("read: " + line)
 				key, value = split_data_json(line)
-				// fmt.Println("key: " +key + " value: " + value +"\n")
-
-				key_hash := xxhash.Sum64String(key)
-				value_hash := xxhash.Sum64String(value)
 
 				if key != "" {
 					// store data
-					dmutex.Lock()
-					(*pdata)[i].used = true
-					(*pdata)[i].key = key
-					(*pdata)[i].value = value
-					(*pdata)[i].key_hash = key_hash
-					(*pdata)[i].value_hash = value_hash
-					dmutex.Unlock()
+					store_data_at(i, key, value)
 					i++
 				}
 			}
@@ -330,6 +307,7 @@ func load_data_json(file_path string) int {
 		}
 	}
 	data_index = i
+	free_index = i // set next free index
 
 	fmt.Println("Log: database JSON " + file_path + " loaded!")
 	return 0
@@ -352,8 +330,12 @@ func save_data_csv(file_path string) int {
 	// remember to close the file
 	defer f.Close()
 
+	// Buffer the writes, otherwise every line is a separate syscall.
+	w := bufio.NewWriter(f)
+	defer w.Flush()
+
 	// write header
-	_, err = f.WriteString("key, value\n")
+	_, err = w.WriteString("key, value\n")
 	if err != nil {
 		fmt.Println("Error writing database file:", err.Error())
 		return 1
@@ -361,18 +343,22 @@ func save_data_csv(file_path string) int {
 
 	// write data loop
 	dmutex.Lock()
+	defer dmutex.Unlock()
 	for i = 0; i < maxdata; i++ {
 		if (*pdata)[i].used {
 			value_save := strings.Trim((*pdata)[i].value, "'\n")
-			_, err = f.WriteString((*pdata)[i].key + ", " + value_save + "\n")
+			_, err = w.WriteString((*pdata)[i].key + ", " + value_save + "\n")
 			if err != nil {
 				fmt.Println("Error writing database file:", err.Error())
-				dmutex.Unlock()
 				return 1
 			}
 		}
 	}
-	dmutex.Unlock()
+
+	if err = w.Flush(); err != nil {
+		fmt.Println("Error writing database file:", err.Error())
+		return 1
+	}
 
 	fmt.Println("Log: database CSV " + file_path + " saved!")
 	return 0
@@ -402,6 +388,9 @@ func load_data_csv(file_path string) int {
 
 	// read and check header
 	scanner := bufio.NewScanner(file)
+
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for scanner.Scan() {
 		line := scanner.Text()
 		if i < maxdata {
@@ -412,21 +401,11 @@ func load_data_csv(file_path string) int {
 				continue
 			}
 
-			// fmt.Println("read: " + line)
 			key, value = split_data_csv(line)
 
-			key_hash := xxhash.Sum64String(key)
-			value_hash := xxhash.Sum64String(value)
-
-			//fmt.Println("load: key: " + key)
 			// store data
-			dmutex.Lock()
-			(*pdata)[i].used = true
-			(*pdata)[i].key = key
-			(*pdata)[i].value = value
-			(*pdata)[i].key_hash = key_hash
-			(*pdata)[i].value_hash = value_hash
-			dmutex.Unlock()
+			store_data_at(i, key, value)
+			i++
 		} else {
 			fmt.Println("Error reading database: out of memory: entries overflow!")
 			return 1
@@ -434,8 +413,9 @@ func load_data_csv(file_path string) int {
 
 	}
 	data_index = i
+	free_index = i // set next free index
 
-	fmt.Println("Log: database JSON " + file_path + " loaded!")
+	fmt.Println("Log: database CSV " + file_path + " loaded!")
 	return 0
 }
 
@@ -591,6 +571,9 @@ func load_data_table_csv(file_path string) int {
 	i = data_index
 
 	scanner := bufio.NewScanner(file)
+
+	dmutex.Lock()
+	defer dmutex.Unlock()
 	for scanner.Scan() {
 		line := scanner.Text()
 
@@ -598,15 +581,11 @@ func load_data_table_csv(file_path string) int {
 			// get key names
 			key_line = false
 			keys_headerstr = line
-
-			//fmt.Println("csv table import: key header: " + keys_headerstr)
 		} else {
 			key = 1
 			do_split = true
 			for do_split {
 				key_headerstr, _, header_next = split_data_csv_table(keys_headerstr, header_start)
-
-				//fmt.Println("csv table import: key: " + key_headerstr)
 
 				if key_headerstr == "" {
 					// end of header, reset
@@ -619,7 +598,6 @@ func load_data_table_csv(file_path string) int {
 				indexstr = strconv.FormatUint(index, 10)
 				keystr = strconv.FormatUint(key, 10)
 				keyfullstr = indexstr + "-" + keystr + "-" + key_headerstr
-				//fmt.Println("csv table import: key full: " + keyfullstr)
 
 				valuestr, _, value_next = split_data_csv_table(line, value_start)
 				if valuestr == "" {
@@ -629,22 +607,10 @@ func load_data_table_csv(file_path string) int {
 					continue
 				}
 
-				//fmt.Println("csv table import: value: " + valuestr)
-
-				key_hash := xxhash.Sum64String(keyfullstr)
-				value_hash := xxhash.Sum64String(valuestr)
-
 				if i < maxdata {
-					dmutex.Lock()
-					(*pdata)[i].used = true
-					(*pdata)[i].key = keyfullstr
-					(*pdata)[i].value = valuestr
-					(*pdata)[i].key_hash = key_hash
-					(*pdata)[i].value_hash = value_hash
-
+					store_data_at(i, keyfullstr, valuestr)
 					data_index = i
 					i++
-					dmutex.Unlock()
 				} else {
 					fmt.Println("Error reading database: out of memory: entries overflow!")
 					return 1
@@ -659,6 +625,7 @@ func load_data_table_csv(file_path string) int {
 			index++
 		}
 	}
+	free_index = i // set next free index
 
 	fmt.Println("Log: database CSV table " + file_path + " loaded!")
 	return 0

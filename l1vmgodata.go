@@ -76,12 +76,12 @@ const (
 )
 
 type data struct {
-	used  bool
-	key_hash  uint64
+	used       bool
+	key_hash   uint64
 	value_hash uint64
-	key   string
-	value string
-	links []string
+	key        string
+	value      string
+	links      []string
 }
 
 var maxdata uint64 = 10000 // max data number
@@ -92,6 +92,8 @@ var server_http_port string = ""
 var server_host = "localhost"
 var server net.Listener
 var pdata *[]data
+var key_index map[string][]uint64 // key -> data indices, for O(1) key lookups
+var used_count uint64             // number of used data entries
 var tls_flag string = ""
 var tls_sock bool = false // set to true if TLS/SSL socket used
 
@@ -272,12 +274,12 @@ func process_client(connection net.Conn) int {
 			run_loop = false
 			continue
 		}
-		// fmt.Println("Received: '", string(buffer[:mLen]), "'")
+		// fmt.Println("Received: '", inputstr, "'")
 		// fmt.Println("length: ", mLen)
 		// fmt.Println(strings.HasPrefix(str, "the")) // false
 		// check close
 
-		inputstr = string(buffer)
+		inputstr = string(buffer[:mLen])
 
 		match = strings.HasPrefix(inputstr, CLOSE_CONNECTION)
 		if match {
@@ -317,7 +319,7 @@ func process_client(connection net.Conn) int {
 		if match {
 			print_message("got login... ")
 
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -325,7 +327,7 @@ func process_client(connection net.Conn) int {
 				}
 			}
 
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -388,14 +390,14 @@ func process_client(connection net.Conn) int {
 
 			// store key/value pair
 			// try to store data
-			if check_data(string(buffer[:mLen])) != 0 {
+			if check_data(inputstr) != 0 {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
 					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
-			key, value = split_data(string(buffer[:mLen]))
+			key, value = split_data(inputstr)
 			if key != "" {
 				if store_data_new(key, value) == 0 {
 					_, err = connection.Write([]byte("OK\n"))
@@ -430,14 +432,14 @@ func process_client(connection net.Conn) int {
 
 			// store key/value pair
 			// try to store data
-			if check_data(string(buffer[:mLen])) != 0 {
+			if check_data(inputstr) != 0 {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
 					print_message("process_client: Error writing:" + err.Error())
 				}
 				continue
 			}
-			key, value = split_data(string(buffer[:mLen]))
+			key, value = split_data(inputstr)
 			if key != "" {
 				if store_data(key, value) == 0 {
 					_, err = connection.Write([]byte("OK\n"))
@@ -464,7 +466,7 @@ func process_client(connection net.Conn) int {
 		if match {
 			// try to find matching key
 
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key != "" {
 				value = get_data_key(key)
 				if value != "" {
@@ -495,7 +497,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, GET_DATA_VALUE)
 		if match {
 			// try to find matching value
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				key = get_data_value(value)
 				if key != "" {
@@ -534,7 +536,7 @@ func process_client(connection net.Conn) int {
 			}
 
 			// try to find matching key
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key != "" {
 				value = remove_data(key)
 				if value != "" {
@@ -565,7 +567,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, GET_DATA_REGEXP_KEY)
 		if match {
 			// try to find matching key
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key != "" {
 				value = get_data_key_regexp(key)
 				if value != "" {
@@ -596,7 +598,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, GET_DATA_REGEXP_VALUE)
 		if match {
 			// try to find matching key
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				key = get_data_value_regexp(value)
 				if key != "" {
@@ -635,7 +637,7 @@ func process_client(connection net.Conn) int {
 			}
 
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if save_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -661,7 +663,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, LOAD_DATA)
 		if match {
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if load_data(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -695,7 +697,7 @@ func process_client(connection net.Conn) int {
 			}
 
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if save_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -721,7 +723,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, LOAD_DATA_JSON)
 		if match {
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if load_data_json(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -755,7 +757,7 @@ func process_client(connection net.Conn) int {
 			}
 
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if save_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -780,7 +782,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, LOAD_DATA_CSV)
 		if match {
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if load_data_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -814,7 +816,7 @@ func process_client(connection net.Conn) int {
 			}
 
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if save_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -840,7 +842,7 @@ func process_client(connection net.Conn) int {
 		match = strings.HasPrefix(inputstr, LOAD_DATA_TABLE_CSV)
 		if match {
 			// try to find matching path name
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value != "" {
 				if load_data_table_csv(database_root+value) != 0 {
 					_, err = connection.Write([]byte("ERROR\n"))
@@ -911,7 +913,7 @@ func process_client(connection net.Conn) int {
 				continue
 			}
 
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -919,7 +921,7 @@ func process_client(connection net.Conn) int {
 				}
 			}
 
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -952,7 +954,7 @@ func process_client(connection net.Conn) int {
 				continue
 			}
 
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -960,7 +962,7 @@ func process_client(connection net.Conn) int {
 				}
 			}
 
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -985,7 +987,7 @@ func process_client(connection net.Conn) int {
 
 		match = strings.HasPrefix(inputstr, GET_LINKS_NUMBER)
 		if match {
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -1014,7 +1016,7 @@ func process_client(connection net.Conn) int {
 
 		match = strings.HasPrefix(inputstr, GET_LINK_NAME)
 		if match {
-			key = split_key(string(buffer[:mLen]))
+			key = split_key(inputstr)
 			if key == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -1022,7 +1024,7 @@ func process_client(connection net.Conn) int {
 				}
 			}
 
-			value = split_value(string(buffer[:mLen]))
+			value = split_value(inputstr)
 			if value == "" {
 				_, err = connection.Write([]byte("ERROR\n"))
 				if err != nil {
@@ -1102,7 +1104,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("allocating ", maxdata , " space for data")
+	fmt.Println("allocating ", maxdata, " space for data")
 
 	servdata := make([]data, maxdata) // make serverdata splice
 	pdata = &servdata

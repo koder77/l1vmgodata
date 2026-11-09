@@ -1,0 +1,38 @@
+Yes. The main costs were linear scans over the whole `maxdata` slice, character-by-character string building, regex compilation inside loops, and unbuffered file I/O.
+
+### Changes made
+
+- **O(1) key lookups** (`datafunc.go`, `l1vmgodata.go`)
+  - Added an in-memory `key_index map[string][]uint64` and a `used_count`.
+  - `get key`, `store data`, `remove`, `usage`, and link lookups no longer scan every slot.
+  - Index is maintained by stores, loads, removals, and `init_data`.
+
+- **Much faster command parsing** (`stringfunc.go`)
+  - Replaced O(n²) `s += string(ch)` loops with `strings.IndexByte`, slicing, and `strings.Builder`.
+  - Also removed several possible index-out-of-range panics on malformed input.
+
+- **Regex queries** (`datafunc.go`)
+  - Regex is now compiled once per query instead of once per database entry.
+
+- **Buffered database I/O** (`file.go`)
+  - `save`/`load` for native, JSON, and CSV formats now use `bufio`.
+  - Removed per-entry lock/unlock churn and debug prints.
+  - Fixed CSV import only keeping the last row, plus missing `free_index` updates.
+
+- **Request handling** (`l1vmgodata.go`)
+  - Reuses the already-converted request string instead of repeatedly doing `string(buffer[:mLen])`.
+
+### Measured improvement
+
+From temporary benchmarks on a 100k-slot database:
+
+| Operation                   | Before              | After            |
+|-----------------------------+---------------------+------------------|
+| `get key` lookup            | ~249 ns             | ~30 ns           |
+| `split_data`                | ~1.05 µs, 37 allocs | ~78 ns, 1 alloc  |
+| `split_key` + `split_value` | ~1.0 µs, 33 allocs  | ~20 ns, 0 allocs |
+
+
+Verified with `go build ./...`, `go vet ./...`, and an end-to-end socket session covering store, get, overwrite, duplicates, remove, and usage.
+
+Remaining linear operations are `get value` (substring search), regex searches, and CSV table export; the server also still handles one client connection at a time. Those are the next candidates if you want further speedups.
